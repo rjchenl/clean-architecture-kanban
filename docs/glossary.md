@@ -38,9 +38,3 @@
 | 移動卡片 | MoveCard／CardMoved | 指令／事件 | 把卡片換到另一欄；會超過目標欄的在製品上限時被拒絕 |
 | 欄內排序 | RepositionCard／CardRepositioned | 指令／事件 | 在同一欄內調整卡片的上下順序 |
 | 刪除卡片 | RemoveCard／CardRemoved | 指令／事件 | 把卡片從看板上拿掉 |
-
-## 暫時項目
-
-| 中文用語 | 程式名稱 | 種類 | 意思 |
-|---|---|---|---|
-| 骨架探針 | EntitiesProbe | 暫時 | Task 1 骨架驗證用，Task 3 連同本列一起移除 |

@@ -7,7 +7,7 @@
 | 規則編號 | 落在哪個模組或類別 | 由哪一支測試或哪一項檢查守住 | 目前狀態 |
 |---|---|---|---|
 | CA-1 | 四個圈模組的相依設定 | 編譯（Maven 模組）＋`CleanArchitectureRules.RINGS_DEPEND_INWARD`（`CleanArchitectureRulesTest`、`CleanArchitectureRulesBiteTest`） | 已驗證 |
-| CA-2 | `board-management/entities` | Maven Enforcer `inner-ring-has-no-dependencies`＋`ENTITIES_USE_ONLY_JDK` | 已實作未驗證（目前只有探針類別，Task 3 起有真正的領域模型） |
+| CA-2 | `board-management/entities`（`module-info` 不 requires 任何模組） | 編譯＋Maven Enforcer `inner-ring-has-no-dependencies`＋`CleanArchitectureRules.ENTITIES_USE_ONLY_JDK` | 已驗證 |
 | CA-3 | `board-management/use-cases` | Maven Enforcer＋`USECASES_USE_ONLY_JDK_AND_ENTITIES` | 已實作未驗證（目前只有探針類別） |
 | CA-4 | — | — | 尚未實作 |
 | CA-5 | — | — | 尚未實作 |
@@ -27,14 +27,14 @@
 | DDD-3 | — | — | 尚未實作（第二階段） |
 | DDD-4 | — | — | 尚未實作 |
 | DDD-5 | — | — | 尚未實作 |
-| DDD-6 | — | — | 尚未實作 |
+| DDD-6 | 9 個值物件：`BoardId`、`ColumnId`、`CardId`、`BoardName`、`ColumnName`、`CardTitle`、`CardDescription`、`WipLimit`、`Position` | `ValueObjectsTest`＋`EntitiesRules.VALUE_OBJECTS_AND_EVENTS_ARE_RECORDS` | 已驗證 |
 | DDD-7 | — | — | 尚未實作 |
 | DDD-8 | — | — | 尚未實作 |
 | DDD-9 | — | — | 尚未實作 |
 | ES-1 | — | — | 尚未實作 |
 | ES-2 | — | — | 尚未實作 |
 | ES-3 | — | — | 尚未實作 |
-| ES-4 | — | — | 尚未實作 |
+| ES-4 | Entities 圈不讀時鐘、不產生亂數 | `EntitiesRules.NO_CLOCK_OR_RANDOM_IN_ENTITIES` | 已實作未驗證（重播測試待 Task 5） |
 | ES-5 | — | — | 尚未實作 |
 | ES-6 | — | — | 尚未實作 |
 | ES-7 | — | — | 尚未實作 |
