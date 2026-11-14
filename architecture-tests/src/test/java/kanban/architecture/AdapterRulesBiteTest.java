@@ -19,6 +19,11 @@ class AdapterRulesBiteTest {
     }
 
     @Test
+    void CA11_OCP_一個Presenter包辦多個Output會被擋下() {
+        assertBites(AdapterRules.ONE_PRESENTER_PER_OUTPUT, "godpresenter");
+    }
+
+    @Test
     void CA11_DIP_Controller直接用Gateway會被擋下() {
         assertBites(AdapterRules.CONTROLLERS_USE_ONLY_INPUT_BOUNDARIES, "controllerusesgateway");
     }

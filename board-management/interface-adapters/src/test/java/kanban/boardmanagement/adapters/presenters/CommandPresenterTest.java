@@ -65,6 +65,16 @@ class CommandPresenterTest {
     }
 
     @Test
+    void 每個指令有自己的Presenter_透過自己的OutputBoundary收到結果() {
+        MoveCardPresenter moveCard = new MoveCardPresenter();
+        kanban.boardmanagement.usecases.commands.movecard.MoveCardOutput output = moveCard;
+
+        output.present(new CommandResponse(false, "WIP_LIMIT_EXCEEDED", null));
+
+        assertThat(moveCard.viewModel().message()).isEqualTo("這一欄已達在製品上限，放不進去");
+    }
+
+    @Test
     void 還沒收到結果就要ViewModel_丟例外() {
         assertThatThrownBy(presenter::viewModel).isInstanceOf(IllegalStateException.class);
     }

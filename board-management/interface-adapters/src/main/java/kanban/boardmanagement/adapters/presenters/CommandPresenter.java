@@ -2,40 +2,15 @@ package kanban.boardmanagement.adapters.presenters;
 
 import java.util.Map;
 import kanban.boardmanagement.usecases.commands.CommandResponse;
-import kanban.boardmanagement.usecases.commands.addcard.AddCardOutput;
-import kanban.boardmanagement.usecases.commands.addcolumn.AddColumnOutput;
-import kanban.boardmanagement.usecases.commands.archiveboard.ArchiveBoardOutput;
-import kanban.boardmanagement.usecases.commands.changecardcontent.ChangeCardContentOutput;
-import kanban.boardmanagement.usecases.commands.createboard.CreateBoardOutput;
-import kanban.boardmanagement.usecases.commands.movecard.MoveCardOutput;
-import kanban.boardmanagement.usecases.commands.movecolumn.MoveColumnOutput;
-import kanban.boardmanagement.usecases.commands.removecard.RemoveCardOutput;
-import kanban.boardmanagement.usecases.commands.removecolumn.RemoveColumnOutput;
-import kanban.boardmanagement.usecases.commands.removecolumnwiplimit.RemoveColumnWipLimitOutput;
-import kanban.boardmanagement.usecases.commands.renameboard.RenameBoardOutput;
-import kanban.boardmanagement.usecases.commands.renamecolumn.RenameColumnOutput;
-import kanban.boardmanagement.usecases.commands.repositioncard.RepositionCardOutput;
-import kanban.boardmanagement.usecases.commands.setcolumnwiplimit.SetColumnWipLimitOutput;
 
 /**
- * Presenter：把指令的 Response Model 整理成 ViewModel（CA-9）。
+ * 所有指令 Presenter 共用的整理方式：把指令的 Response Model 整理成 ViewModel（CA-9）。
  * 所有給使用者看的文字都在這裡；這裡不判斷指令能不能做，只把聚合給的結果翻成訊息。
+ *
+ * <p>每個指令有自己的 Presenter 類別（例如 MoveCardPresenter）實作自己的 Output Boundary，
+ * 新增指令時新增一個類別即可，不必修改既有的 Presenter（CA-11 OCP）。
  */
-public final class CommandPresenter implements
-        CreateBoardOutput,
-        RenameBoardOutput,
-        ArchiveBoardOutput,
-        AddColumnOutput,
-        RenameColumnOutput,
-        MoveColumnOutput,
-        SetColumnWipLimitOutput,
-        RemoveColumnWipLimitOutput,
-        RemoveColumnOutput,
-        AddCardOutput,
-        ChangeCardContentOutput,
-        MoveCardOutput,
-        RepositionCardOutput,
-        RemoveCardOutput {
+public class CommandPresenter {
 
     private static final String INVALID_REQUEST_MESSAGE = "請求內容不完整或格式不正確";
 
@@ -61,7 +36,6 @@ public final class CommandPresenter implements
 
     private CommandViewModel viewModel;
 
-    @Override
     public void present(CommandResponse response) {
         String createdId = response.createdId() == null ? "" : response.createdId();
         if (response.succeeded()) {

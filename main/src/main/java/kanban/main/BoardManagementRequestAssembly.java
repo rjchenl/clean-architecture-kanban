@@ -25,6 +25,20 @@ import kanban.boardmanagement.adapters.presenters.BoardViewModel;
 import kanban.boardmanagement.adapters.presenters.CardHistoryPresenter;
 import kanban.boardmanagement.adapters.presenters.CardHistoryViewModel;
 import kanban.boardmanagement.adapters.presenters.CommandPresenter;
+import kanban.boardmanagement.adapters.presenters.RemoveCardPresenter;
+import kanban.boardmanagement.adapters.presenters.RepositionCardPresenter;
+import kanban.boardmanagement.adapters.presenters.MoveCardPresenter;
+import kanban.boardmanagement.adapters.presenters.ChangeCardContentPresenter;
+import kanban.boardmanagement.adapters.presenters.AddCardPresenter;
+import kanban.boardmanagement.adapters.presenters.RemoveColumnPresenter;
+import kanban.boardmanagement.adapters.presenters.RemoveColumnWipLimitPresenter;
+import kanban.boardmanagement.adapters.presenters.SetColumnWipLimitPresenter;
+import kanban.boardmanagement.adapters.presenters.MoveColumnPresenter;
+import kanban.boardmanagement.adapters.presenters.RenameColumnPresenter;
+import kanban.boardmanagement.adapters.presenters.AddColumnPresenter;
+import kanban.boardmanagement.adapters.presenters.ArchiveBoardPresenter;
+import kanban.boardmanagement.adapters.presenters.RenameBoardPresenter;
+import kanban.boardmanagement.adapters.presenters.CreateBoardPresenter;
 import kanban.boardmanagement.adapters.presenters.CommandViewModel;
 import kanban.boardmanagement.frameworks.web.BoardManagementRequests;
 import kanban.boardmanagement.usecases.commands.CommandResponse;
@@ -85,98 +99,98 @@ final class BoardManagementRequestAssembly implements BoardManagementRequests {
 
     @Override
     public CommandViewModel createBoard(String name) {
-        CommandPresenter presenter = new CommandPresenter();
+        CreateBoardPresenter presenter = new CreateBoardPresenter();
         new CreateBoardController(new CreateBoardUseCase(boards, time, ids, presenter)).handle(name);
         return presenter.viewModel();
     }
 
     @Override
     public CommandViewModel renameBoard(String boardId, String name) {
-        CommandPresenter presenter = new CommandPresenter();
+        RenameBoardPresenter presenter = new RenameBoardPresenter();
         new RenameBoardController(new RenameBoardUseCase(boards, time, presenter)).handle(boardId, name);
         return presenter.viewModel();
     }
 
     @Override
     public CommandViewModel archiveBoard(String boardId) {
-        CommandPresenter presenter = new CommandPresenter();
+        ArchiveBoardPresenter presenter = new ArchiveBoardPresenter();
         new ArchiveBoardController(new ArchiveBoardUseCase(boards, time, presenter)).handle(boardId);
         return presenter.viewModel();
     }
 
     @Override
     public CommandViewModel addColumn(String boardId, String name) {
-        CommandPresenter presenter = new CommandPresenter();
+        AddColumnPresenter presenter = new AddColumnPresenter();
         new AddColumnController(new AddColumnUseCase(boards, time, ids, presenter)).handle(boardId, name);
         return presenter.viewModel();
     }
 
     @Override
     public CommandViewModel renameColumn(String boardId, String columnId, String name) {
-        CommandPresenter presenter = new CommandPresenter();
+        RenameColumnPresenter presenter = new RenameColumnPresenter();
         new RenameColumnController(new RenameColumnUseCase(boards, time, presenter)).handle(boardId, columnId, name);
         return presenter.viewModel();
     }
 
     @Override
     public CommandViewModel moveColumn(String boardId, String columnId, Integer toPosition) {
-        CommandPresenter presenter = new CommandPresenter();
+        MoveColumnPresenter presenter = new MoveColumnPresenter();
         new MoveColumnController(new MoveColumnUseCase(boards, time, presenter)).handle(boardId, columnId, toPosition);
         return presenter.viewModel();
     }
 
     @Override
     public CommandViewModel setColumnWipLimit(String boardId, String columnId, Integer limit) {
-        CommandPresenter presenter = new CommandPresenter();
+        SetColumnWipLimitPresenter presenter = new SetColumnWipLimitPresenter();
         new SetColumnWipLimitController(new SetColumnWipLimitUseCase(boards, time, presenter)).handle(boardId, columnId, limit);
         return presenter.viewModel();
     }
 
     @Override
     public CommandViewModel removeColumnWipLimit(String boardId, String columnId) {
-        CommandPresenter presenter = new CommandPresenter();
+        RemoveColumnWipLimitPresenter presenter = new RemoveColumnWipLimitPresenter();
         new RemoveColumnWipLimitController(new RemoveColumnWipLimitUseCase(boards, time, presenter)).handle(boardId, columnId);
         return presenter.viewModel();
     }
 
     @Override
     public CommandViewModel removeColumn(String boardId, String columnId) {
-        CommandPresenter presenter = new CommandPresenter();
+        RemoveColumnPresenter presenter = new RemoveColumnPresenter();
         new RemoveColumnController(new RemoveColumnUseCase(boards, time, presenter)).handle(boardId, columnId);
         return presenter.viewModel();
     }
 
     @Override
     public CommandViewModel addCard(String boardId, String columnId, String title, String description) {
-        CommandPresenter presenter = new CommandPresenter();
+        AddCardPresenter presenter = new AddCardPresenter();
         new AddCardController(new AddCardUseCase(boards, time, ids, presenter)).handle(boardId, columnId, title, description);
         return presenter.viewModel();
     }
 
     @Override
     public CommandViewModel changeCardContent(String boardId, String cardId, String title, String description) {
-        CommandPresenter presenter = new CommandPresenter();
+        ChangeCardContentPresenter presenter = new ChangeCardContentPresenter();
         new ChangeCardContentController(new ChangeCardContentUseCase(boards, time, presenter)).handle(boardId, cardId, title, description);
         return presenter.viewModel();
     }
 
     @Override
     public CommandViewModel moveCard(String boardId, String cardId, String toColumnId, Integer toPosition) {
-        CommandPresenter presenter = new CommandPresenter();
+        MoveCardPresenter presenter = new MoveCardPresenter();
         new MoveCardController(new MoveCardUseCase(boards, time, presenter)).handle(boardId, cardId, toColumnId, toPosition);
         return presenter.viewModel();
     }
 
     @Override
     public CommandViewModel repositionCard(String boardId, String cardId, Integer toPosition) {
-        CommandPresenter presenter = new CommandPresenter();
+        RepositionCardPresenter presenter = new RepositionCardPresenter();
         new RepositionCardController(new RepositionCardUseCase(boards, time, presenter)).handle(boardId, cardId, toPosition);
         return presenter.viewModel();
     }
 
     @Override
     public CommandViewModel removeCard(String boardId, String cardId) {
-        CommandPresenter presenter = new CommandPresenter();
+        RemoveCardPresenter presenter = new RemoveCardPresenter();
         new RemoveCardController(new RemoveCardUseCase(boards, time, presenter)).handle(boardId, cardId);
         return presenter.viewModel();
     }

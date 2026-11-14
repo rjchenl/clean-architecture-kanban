@@ -67,4 +67,25 @@ public final class AdapterRules {
                 }
             })
             .as("CA-11 DIP Controller 只相依 Input Boundary 與 Request Model");
+
+    /**
+     * CA-11 OCP、SRP：一個 Presenter 只實作一個 Output Boundary。
+     * 新增一個 Use Case 就新增一個 Presenter，不必回頭修改既有的 Presenter。
+     */
+    public static final ArchRule ONE_PRESENTER_PER_OUTPUT = classes()
+            .that().resideInAPackage("..adapters.presenters..")
+            .and().areNotInterfaces()
+            .should(new ArchCondition<>("最多實作一個 Output Boundary") {
+                @Override
+                public void check(JavaClass presenter, ConditionEvents events) {
+                    long outputs = presenter.getAllRawInterfaces().stream()
+                            .filter(i -> i.getSimpleName().endsWith("Output"))
+                            .count();
+                    if (outputs > 1) {
+                        events.add(SimpleConditionEvent.violated(presenter,
+                                presenter.getName() + " 實作了 " + outputs + " 個 Output Boundary"));
+                    }
+                }
+            })
+            .as("CA-11 OCP 一個 Presenter 只實作一個 Output Boundary");
 }

@@ -13,6 +13,11 @@ class AdapterRulesTest {
     }
 
     @Test
+    void CA11_OCP_一個Presenter只實作一個Output() {
+        AdapterRules.ONE_PRESENTER_PER_OUTPUT.check(Imported.production());
+    }
+
+    @Test
     void CA11_DIP_Controller只用InputBoundary() {
         AdapterRules.CONTROLLERS_USE_ONLY_INPUT_BOUNDARIES.check(Imported.production());
     }

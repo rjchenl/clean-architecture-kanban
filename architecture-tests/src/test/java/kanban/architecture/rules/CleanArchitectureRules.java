@@ -106,6 +106,8 @@ public final class CleanArchitectureRules {
                         boolean createsAdapter = Shapes.inPackage(target, "adapters")
                                 && Shapes.isBehaviourClass(target)
                                 && !target.equals(origin)
+                                // 子類別的建構子呼叫父類別的建構子是繼承，不是另外建立一個物件
+                                && !origin.isAssignableTo(target.getName())
                                 && !target.getEnclosingClass().map(origin::equals).orElse(false)
                                 && !origin.getEnclosingClass().map(target::equals).orElse(false);
                         if (createsAdapter) {
