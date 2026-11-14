@@ -12,8 +12,8 @@
 | CA-4 | 17 個 Use Case 套件的 `…Input`、`…Output` 與 `impl/…UseCase`；`adapters.controllers` 呼叫 Input、`adapters.presenters` 實作 Output | `UseCaseRules.EVERY_USECASE_HAS_BOTH_BOUNDARIES`、`AdapterRules.CONTROLLERS_USE_ONLY_INPUT_BOUNDARIES`＋`ControllersTest` | 已驗證 |
 | CA-5 | `…Request`、`…Response`、`CommandResponse`、查詢端的讀取模型 record（解讀見設計文件 4.3） | `UseCaseRules.BOUNDARY_TYPES_ARE_SIMPLE` | 已驗證 |
 | CA-6 | 介面：`usecases.commands.gateway`、`usecases.eventfeed`、查詢端三個 `…Reader`；實作：`adapters.eventstore`、`adapters.projection`（記憶體版與 PostgreSQL 版） | 編譯＋`DddRules.REPOSITORY_INTERFACE_INSIDE_IMPL_OUTSIDE`＋契約測試各跑兩次：`EventStoreContract`（`InMemoryEventStoreTest`、`PostgresEventStoreTest`）、`ReadModelStoreContract`（`InMemoryReadModelStoreTest`、`PostgresReadModelStoreTest`） | 已驗證 |
-| CA-7 | 內三圈 | `ADAPTERS_FREE_OF_FRAMEWORKS`、`SPRING_ANNOTATIONS_ONLY_IN_OUTER_RING` | 已實作未驗證（目前只有探針類別） |
-| CA-8 | `main` 模組 | `CleanArchitectureRules.ONLY_MAIN_KNOWS_IMPLEMENTATIONS`＋`module-info`（impl 套件不公開） | 已實作未驗證（Main 的組裝程式待 Task 15） |
+| CA-7 | Spring 只出現在 `frameworks-drivers` 與 `main`；內三圈無任何框架 | `CleanArchitectureRules.ADAPTERS_FREE_OF_FRAMEWORKS`、`SPRING_ANNOTATIONS_ONLY_IN_OUTER_RING`、`ENTITIES_USE_ONLY_JDK`、`USECASES_USE_ONLY_JDK_AND_ENTITIES`＋`FrameworkRules.ENDPOINTS_ONLY_DELEGATE`＋編譯（內兩圈零相依） | 已驗證 |
+| CA-8 | `main` 模組：`BoardManagementWiring`（建立所有實作）、`BoardManagementRequestAssembly`（每次請求接起 Controller、Use Case、Presenter） | `CleanArchitectureRules.ONLY_MAIN_KNOWS_IMPLEMENTATIONS`＋`module-info`（impl 套件不公開，Task 1 反向證明）＋`BoardHttpIntegrationTest` | 已驗證 |
 | CA-9 | `adapters.presenters`（4 個 Presenter 與 ViewModel） | `CommandPresenterTest`、`BoardPresenterTest`、`BoardListPresenterTest`、`CardHistoryPresenterTest`＋`AdapterRules.VIEWMODELS_ARE_DISPLAY_READY` | 已實作未驗證（Vue 畫面與前端審查清單 R-01～R-03 待 Task 16、18） |
 | CA-10 | 模組、最上層套件、Use Cases 圈套件命名 | `CleanArchitectureRules.TOP_LEVEL_PACKAGES_SCREAM`、`UseCaseRules.USECASE_PACKAGES_ON_ALLOW_LIST` | 已驗證 |
 | CA-11 | 全部 | DIP：編譯＋`module-info`＋`CleanArchitectureRules.ONLY_MAIN_KNOWS_IMPLEMENTATIONS`、`AdapterRules.CONTROLLERS_USE_ONLY_INPUT_BOUNDARIES`；ISP：`UseCaseRules.INPUT_BOUNDARY_HAS_ONE_METHOD`、`CleanArchitectureRules.EVENT_ACCESS_IS_SEGREGATED`、`CqrsRules.ONLY_PROJECTION_WRITES_READ_MODEL` | 已實作未驗證（SRP、OCP、LSP 審查 R-04～R-06 待 Task 18） |
@@ -44,4 +44,4 @@
 | CQRS-3 | 查詢 Use Case 只讀 `BoardSnapshotReader`、`BoardSummaryReader`、`CardHistoryReader` | `CqrsRules.QUERIES_NEVER_TOUCH_WRITE_SIDE` | 已驗證 |
 | CQRS-4 | 指令端只靠聚合自己的狀態做決定 | `CqrsRules.COMMANDS_NEVER_READ_READ_MODEL` | 已驗證 |
 | CQRS-5 | `adapters.projection.BoardProjection`（讀取模型唯一的寫入途徑） | `CqrsRules.ONLY_PROJECTION_WRITES_READ_MODEL`＋`BoardProjectionTest`（已處理過的事件再送一次_被略過_結果不變、catchUp連續呼叫兩次_結果不變） | 已驗證 |
-| CQRS-6 | — | — | 尚未實作 |
+| CQRS-6 | 設計文件 7.5 節；`NotifyingEventStore`＋`BoardProjection.catchUp`＋啟動時補齊 | `ConsistencyIntegrationTest`（情況1、情況2、情況3 各一支）＋`StartupCatchUpIntegrationTest` | 已驗證 |
