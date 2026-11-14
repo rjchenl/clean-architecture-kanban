@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# 本機個人設定
+CLAUDE.local.md
+.claude/settings.local.json
