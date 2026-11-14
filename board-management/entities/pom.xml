@@ -26,6 +26,16 @@
 
   <build>
     <plugins>
+      <!-- 把聚合測試打包成 test-jar，讓 architecture-tests 檢查聚合測試的寫法（ES-5） -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals><goal>test-jar</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
       <!-- CA-2／CA-3：這一圈不得宣告任何非測試相依，違反就建置失敗 -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

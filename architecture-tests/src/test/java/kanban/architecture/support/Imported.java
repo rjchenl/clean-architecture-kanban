@@ -16,11 +16,25 @@ public final class Imported {
 
     private static final JavaClasses PRODUCTION = new ClassFileImporter()
             .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+            // entities 的 test-jar 也在 classpath 上（給 ES-5 規則用），正式程式碼的檢查要排除它
+            .withImportOption(location -> !location.contains("-tests.jar") && !location.contains("/test-classes/"))
             .importPackages("kanban.boardmanagement", "kanban.main");
 
     /** 正式程式碼（不含測試、不含違規樣本）。 */
     public static JavaClasses production() {
         return PRODUCTION;
+    }
+
+    /** Entities 圈的測試類別（來自 entities 的 test-jar），用來檢查聚合測試的寫法。 */
+    public static JavaClasses entitiesTests() {
+        return new ClassFileImporter()
+                .importPackages("kanban.boardmanagement.entities")
+                .that(new com.tngtech.archunit.base.DescribedPredicate<>("是測試類別") {
+                    @Override
+                    public boolean test(com.tngtech.archunit.core.domain.JavaClass type) {
+                        return type.getSimpleName().endsWith("Test");
+                    }
+                });
     }
 
     /** 某一條規則的違規樣本。 */
