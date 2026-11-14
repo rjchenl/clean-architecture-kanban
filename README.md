@@ -1,22 +1,30 @@
-# clean-architecture-todolist
+# clean-architecture-kanban
 
-用一個 Todo List 應用，完整實踐 Robert C. Martin《Clean Architecture》（無瑕的程式碼：整潔的軟體設計與架構篇）的設計原則。
+用一個看板系統（Kanban Board），完整實踐下列四套方法：
+
+- Robert C. Martin《Clean Architecture》（無瑕的程式碼：整潔的軟體設計與架構篇）
+- Domain-Driven Design（DDD）
+- CQRS（指令與查詢責任分離）
+- Event Sourcing（事件溯源）
 
 ## 目標
 
-- 以最簡單的業務（待辦事項）當載體，把注意力放在架構本身。
-- 遵守相依性規則（The Dependency Rule）：原始碼的相依方向只能由外向內，內層不知道外層的任何事。
-- 業務規則不依賴框架、UI、資料庫或任何外部代理，並且可以獨立測試。
+這是一個示範作品。功能本身不是重點，重點是四套方法都真的在程式裡起作用，而且每一條原則都有自動檢查守住，讀者可以逐條查核。
 
-## 預計的分層
+## 四套方法各管什麼
 
-由內到外：
+| 方法 | 它管什麼 | 在看板系統裡的樣子 |
+|---|---|---|
+| Clean Architecture | 程式碼誰可以依賴誰 | 相依方向只能由外向內；框架、資料庫、前端都在最外圈 |
+| DDD | 最內圈的業務怎麼建模 | 聚合守住業務規則（在製品上限、卡片移動規則等）；程式用語與業務用語表一致 |
+| Event Sourcing | 寫入端怎麼存資料 | 只存發生過的事件，現況由重播事件算出 |
+| CQRS | 寫入和查詢怎麼分開 | 寫入端處理指令並產生事件；查詢端由事件推算出給畫面看的資料 |
 
-1. **Entities**：企業級業務規則。
-2. **Use Cases**：應用程式專屬的業務規則。
-3. **Interface Adapters**：Controllers、Presenters、Gateways。
-4. **Frameworks & Drivers**：Web、資料庫、UI 等細節。
+## 技術選型
+
+- 後端：Java + Spring Boot（Spring 只出現在最外圈）
+- 前端：Vue（只當很薄的畫面，顯示後端整理好的 ViewModel）
 
 ## 狀態
 
-專案剛建立，尚未選定語言與框架，也還沒有程式碼。
+專案剛建立，設計進行中，尚未有程式碼。
