@@ -11,7 +11,7 @@
 | CA-3 | `board-management/use-cases`（`module-info` 只 requires Entities） | 編譯＋Maven Enforcer＋`CleanArchitectureRules.USECASES_USE_ONLY_JDK_AND_ENTITIES`；14 支 `…UseCaseTest` 用 `FakeBoardRepository`，不啟動 Spring | 已驗證 |
 | CA-4 | 17 個 Use Case 套件的 `…Input`、`…Output` 與 `impl/…UseCase`；`adapters.controllers` 呼叫 Input、`adapters.presenters` 實作 Output | `UseCaseRules.EVERY_USECASE_HAS_BOTH_BOUNDARIES`、`AdapterRules.CONTROLLERS_USE_ONLY_INPUT_BOUNDARIES`＋`ControllersTest` | 已驗證 |
 | CA-5 | `…Request`、`…Response`、`CommandResponse`、查詢端的讀取模型 record（解讀見設計文件 4.3） | `UseCaseRules.BOUNDARY_TYPES_ARE_SIMPLE` | 已驗證 |
-| CA-6 | 介面：`usecases.commands.gateway`（`BoardRepository`、`EventStore`）、`usecases.eventfeed.EventFeed`；實作：`adapters.eventstore` | 編譯＋`DddRules.REPOSITORY_INTERFACE_INSIDE_IMPL_OUTSIDE`＋契約測試 `EventStoreContract`（目前只對 `InMemoryEventStore` 跑） | 已實作未驗證（PostgreSQL 版與讀取模型的契約測試待 Task 11、14） |
+| CA-6 | 介面：`usecases.commands.gateway`、`usecases.eventfeed`、查詢端三個 `…Reader`；實作：`adapters.eventstore`、`adapters.projection`（記憶體版與 PostgreSQL 版） | 編譯＋`DddRules.REPOSITORY_INTERFACE_INSIDE_IMPL_OUTSIDE`＋契約測試各跑兩次：`EventStoreContract`（`InMemoryEventStoreTest`、`PostgresEventStoreTest`）、`ReadModelStoreContract`（`InMemoryReadModelStoreTest`、`PostgresReadModelStoreTest`） | 已驗證 |
 | CA-7 | 內三圈 | `ADAPTERS_FREE_OF_FRAMEWORKS`、`SPRING_ANNOTATIONS_ONLY_IN_OUTER_RING` | 已實作未驗證（目前只有探針類別） |
 | CA-8 | `main` 模組 | `CleanArchitectureRules.ONLY_MAIN_KNOWS_IMPLEMENTATIONS`＋`module-info`（impl 套件不公開） | 已實作未驗證（Main 的組裝程式待 Task 15） |
 | CA-9 | `adapters.presenters`（4 個 Presenter 與 ViewModel） | `CommandPresenterTest`、`BoardPresenterTest`、`BoardListPresenterTest`、`CardHistoryPresenterTest`＋`AdapterRules.VIEWMODELS_ARE_DISPLAY_READY` | 已實作未驗證（Vue 畫面與前端審查清單 R-01～R-03 待 Task 16、18） |
@@ -31,14 +31,14 @@
 | DDD-7 | 14 個領域事件 record，共同型別 `BoardEvent` | `EntitiesRules.EVENTS_NAMED_IN_PAST_TENSE`、`VALUE_OBJECTS_AND_EVENTS_ARE_RECORDS` | 已驗證 |
 | DDD-8 | `BoardRepository`（一個聚合一個）；實作 `EventSourcedBoardRepository` | `DddRules.REPOSITORY_INTERFACE_INSIDE_IMPL_OUTSIDE`＋`EventSourcedBoardRepositoryTest` | 已驗證 |
 | DDD-9 | 指令 Use Case 只協調（`commands.support.BoardCommand`） | 聚合測試涵蓋 R1～R12；審查清單 R-11 | 已實作未驗證（審查待 Task 18） |
-| ES-1 | `EventStore` 是寫入端唯一的儲存途徑；`EventSourcedBoardRepository` 只靠它 | `EventSourcingRules.NO_STATE_TABLE_ABSTRACTION_ON_WRITE_SIDE` | 已實作未驗證（資料庫結構檢查待 Task 14） |
-| ES-2 | `EventStore`、`EventFeed` 介面沒有更新與刪除 | `EventStoreContract.介面沒有更新與刪除` | 已實作未驗證（資料庫層的唯讀觸發程序待 Task 14） |
+| ES-1 | 資料表 `board_events` 是寫入端唯一的表；`EventSourcedBoardRepository` 只靠 `EventStore` | `EventSourcingRules.NO_STATE_TABLE_ABSTRACTION_ON_WRITE_SIDE`＋資料庫結構檢查 `WriteSideSchemaTest.寫入端只有事件表` | 已驗證 |
+| ES-2 | `EventStore`、`EventFeed` 介面沒有更新與刪除；`board_events` 的唯讀觸發程序（`V1__event_store.sql`） | `EventStoreContract.介面沒有更新與刪除`＋`EventTableIsAppendOnlyTest`（修改、刪除、清空都被資料庫拒絕） | 已驗證 |
 | ES-3 | `Board`：指令方法只做檢查與產生事件；`apply`／`on…` 方法只改狀態 | `EntitiesRules.APPLY_METHODS_DO_NOT_REJECT`、`STATE_CHANGES_ONLY_IN_APPLY`＋聚合測試 | 已驗證 |
 | ES-4 | `Board.rehydrate`；時間由指令方法的參數傳入 | `ReplayTest`（同一串事件重播兩次_後續指令的結果相同 等 7 支）＋`EntitiesRules.NO_CLOCK_OR_RANDOM_IN_ENTITIES` | 已驗證 |
 | ES-5 | `BoardScenario`（Given／When／Then） | `EntitiesRules.AGGREGATE_TESTS_USE_SCENARIO` | 已驗證 |
-| ES-6 | `EventStore.append` 的預期版本號 | `EventStoreContract.預期版本不符_丟ConcurrentUpdateException且不寫入任何事件`、`InMemoryEventStoreTest.十條執行緒同時寫入同一個預期版本_恰好一條成功` | 已實作未驗證（PostgreSQL 版待 Task 14） |
+| ES-6 | `EventStore.append` 的預期版本號；`board_events` 的 `(stream_id, stream_version)` 唯一鍵 | `EventStoreContract.預期版本不符_丟ConcurrentUpdateException且不寫入任何事件`（兩種實作）＋`PostgresEventStoreTest.十條執行緒同時對同一條串流寫入同一個預期版本_恰好一條成功`＋`InMemoryEventStoreTest` 同名測試 | 已驗證 |
 | ES-7 | `adapters.eventstore.BoardEventJson`（事件類型名稱、格式版本、upcaster）；樣本檔 `interface-adapters/src/test/resources/event-samples/` | `BoardEventJsonTest`（樣本檔都讀得回來、每種事件的每個版本都有樣本檔、CardAdded_v1_讀回來時說明是空字串） | 已驗證 |
-| ES-8 | `BoardProjection.rebuild`、`ReadModelStore.reset` | `BoardProjectionTest`（重建後與重建前完全相同、重建會丟掉讀取模型裡原本的東西） | 已驗證（PostgreSQL 版的重建測試於 Task 14 追加） |
+| ES-8 | `BoardProjection.rebuild`、`ReadModelStore.reset` | `BoardProjectionTest.重建後與重建前完全相同`、`PostgresProjectionTest.重建後與重建前完全相同` | 已驗證 |
 | CQRS-1 | `usecases.commands`、`usecases.queries` 兩個套件 | `CqrsRules.COMMANDS_AND_QUERIES_SEPARATE`、`QUERIES_NEVER_TOUCH_WRITE_SIDE` | 已驗證 |
 | CQRS-2 | `CommandResponse`；查詢的 Response Model 來自讀取模型 | `UseCaseRules.COMMAND_RESPONSE_CARRIES_NO_VIEW_DATA`、`CqrsRules.QUERIES_NEVER_TOUCH_WRITE_SIDE`＋查詢測試 `ViewBoardUseCaseTest`、`ListBoardsUseCaseTest`、`ViewCardHistoryUseCaseTest` | 已驗證 |
 | CQRS-3 | 查詢 Use Case 只讀 `BoardSnapshotReader`、`BoardSummaryReader`、`CardHistoryReader` | `CqrsRules.QUERIES_NEVER_TOUCH_WRITE_SIDE` | 已驗證 |
