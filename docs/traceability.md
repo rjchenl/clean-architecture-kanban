@@ -9,14 +9,14 @@
 | CA-1 | 四個圈模組的相依設定 | 編譯（Maven 模組）＋`CleanArchitectureRules.RINGS_DEPEND_INWARD`（`CleanArchitectureRulesTest`、`CleanArchitectureRulesBiteTest`） | 已驗證 |
 | CA-2 | `board-management/entities`（`module-info` 不 requires 任何模組） | 編譯＋Maven Enforcer `inner-ring-has-no-dependencies`＋`CleanArchitectureRules.ENTITIES_USE_ONLY_JDK` | 已驗證 |
 | CA-3 | `board-management/use-cases`（`module-info` 只 requires Entities） | 編譯＋Maven Enforcer＋`CleanArchitectureRules.USECASES_USE_ONLY_JDK_AND_ENTITIES`；14 支 `…UseCaseTest` 用 `FakeBoardRepository`，不啟動 Spring | 已驗證 |
-| CA-4 | 17 個 Use Case 套件的 `…Input`、`…Output` 與 `impl/…UseCase` | `UseCaseRules.EVERY_USECASE_HAS_BOTH_BOUNDARIES` | 已實作未驗證（Controller 呼叫 Input、Presenter 實作 Output 待 Task 12） |
+| CA-4 | 17 個 Use Case 套件的 `…Input`、`…Output` 與 `impl/…UseCase`；`adapters.controllers` 呼叫 Input、`adapters.presenters` 實作 Output | `UseCaseRules.EVERY_USECASE_HAS_BOTH_BOUNDARIES`、`AdapterRules.CONTROLLERS_USE_ONLY_INPUT_BOUNDARIES`＋`ControllersTest` | 已驗證 |
 | CA-5 | `…Request`、`…Response`、`CommandResponse`、查詢端的讀取模型 record（解讀見設計文件 4.3） | `UseCaseRules.BOUNDARY_TYPES_ARE_SIMPLE` | 已驗證 |
 | CA-6 | 介面：`usecases.commands.gateway`（`BoardRepository`、`EventStore`）、`usecases.eventfeed.EventFeed`；實作：`adapters.eventstore` | 編譯＋`DddRules.REPOSITORY_INTERFACE_INSIDE_IMPL_OUTSIDE`＋契約測試 `EventStoreContract`（目前只對 `InMemoryEventStore` 跑） | 已實作未驗證（PostgreSQL 版與讀取模型的契約測試待 Task 11、14） |
 | CA-7 | 內三圈 | `ADAPTERS_FREE_OF_FRAMEWORKS`、`SPRING_ANNOTATIONS_ONLY_IN_OUTER_RING` | 已實作未驗證（目前只有探針類別） |
 | CA-8 | `main` 模組 | `CleanArchitectureRules.ONLY_MAIN_KNOWS_IMPLEMENTATIONS`＋`module-info`（impl 套件不公開） | 已實作未驗證（Main 的組裝程式待 Task 15） |
-| CA-9 | — | — | 尚未實作 |
+| CA-9 | `adapters.presenters`（4 個 Presenter 與 ViewModel） | `CommandPresenterTest`、`BoardPresenterTest`、`BoardListPresenterTest`、`CardHistoryPresenterTest`＋`AdapterRules.VIEWMODELS_ARE_DISPLAY_READY` | 已實作未驗證（Vue 畫面與前端審查清單 R-01～R-03 待 Task 16、18） |
 | CA-10 | 模組、最上層套件、Use Cases 圈套件命名 | `CleanArchitectureRules.TOP_LEVEL_PACKAGES_SCREAM`、`UseCaseRules.USECASE_PACKAGES_ON_ALLOW_LIST` | 已驗證 |
-| CA-11 | — | DIP：編譯＋`ONLY_MAIN_KNOWS_IMPLEMENTATIONS`；ISP：`EVENT_ACCESS_IS_SEGREGATED` | 已實作未驗證（其餘 ISP 規則待 Task 8、11、12；SRP、OCP、LSP 審查待 Task 18） |
+| CA-11 | 全部 | DIP：編譯＋`module-info`＋`CleanArchitectureRules.ONLY_MAIN_KNOWS_IMPLEMENTATIONS`、`AdapterRules.CONTROLLERS_USE_ONLY_INPUT_BOUNDARIES`；ISP：`UseCaseRules.INPUT_BOUNDARY_HAS_ONE_METHOD`、`CleanArchitectureRules.EVENT_ACCESS_IS_SEGREGATED`、`CqrsRules.ONLY_PROJECTION_WRITES_READ_MODEL` | 已實作未驗證（SRP、OCP、LSP 審查 R-04～R-06 待 Task 18） |
 | CA-12 | 模組與各圈套件相依圖 | 編譯（Maven 模組不允許循環）＋`NO_PACKAGE_CYCLES` | 已驗證 |
 | CA-13 | — | — | 尚未實作 |
 | CA-14 | 設計文件 `docs/design/phase-one-board-management.md` 第 10 節「邊界清單」 | 設計文件＋本表 | 已驗證 |

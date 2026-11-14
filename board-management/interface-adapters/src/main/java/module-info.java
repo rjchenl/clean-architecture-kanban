@@ -4,7 +4,9 @@ module kanban.boardmanagement.adapters {
     requires java.sql;
     requires tools.jackson.databind;
 
+    exports kanban.boardmanagement.adapters.controllers;
     exports kanban.boardmanagement.adapters.eventstore;
+    exports kanban.boardmanagement.adapters.presenters;
     exports kanban.boardmanagement.adapters.projection;
     exports kanban.boardmanagement.adapters.system;
 }
