@@ -38,10 +38,10 @@
 | ES-5 | `BoardScenario`（Given／When／Then） | `EntitiesRules.AGGREGATE_TESTS_USE_SCENARIO` | 已驗證 |
 | ES-6 | `EventStore.append` 的預期版本號 | `EventStoreContract.預期版本不符_丟ConcurrentUpdateException且不寫入任何事件`、`InMemoryEventStoreTest.十條執行緒同時寫入同一個預期版本_恰好一條成功` | 已實作未驗證（PostgreSQL 版待 Task 14） |
 | ES-7 | `adapters.eventstore.BoardEventJson`（事件類型名稱、格式版本、upcaster）；樣本檔 `interface-adapters/src/test/resources/event-samples/` | `BoardEventJsonTest`（樣本檔都讀得回來、每種事件的每個版本都有樣本檔、CardAdded_v1_讀回來時說明是空字串） | 已驗證 |
-| ES-8 | — | — | 尚未實作 |
+| ES-8 | `BoardProjection.rebuild`、`ReadModelStore.reset` | `BoardProjectionTest`（重建後與重建前完全相同、重建會丟掉讀取模型裡原本的東西） | 已驗證（PostgreSQL 版的重建測試於 Task 14 追加） |
 | CQRS-1 | `usecases.commands`、`usecases.queries` 兩個套件 | `CqrsRules.COMMANDS_AND_QUERIES_SEPARATE`、`QUERIES_NEVER_TOUCH_WRITE_SIDE` | 已驗證 |
 | CQRS-2 | `CommandResponse`；查詢的 Response Model 來自讀取模型 | `UseCaseRules.COMMAND_RESPONSE_CARRIES_NO_VIEW_DATA`、`CqrsRules.QUERIES_NEVER_TOUCH_WRITE_SIDE`＋查詢測試 `ViewBoardUseCaseTest`、`ListBoardsUseCaseTest`、`ViewCardHistoryUseCaseTest` | 已驗證 |
 | CQRS-3 | 查詢 Use Case 只讀 `BoardSnapshotReader`、`BoardSummaryReader`、`CardHistoryReader` | `CqrsRules.QUERIES_NEVER_TOUCH_WRITE_SIDE` | 已驗證 |
 | CQRS-4 | 指令端只靠聚合自己的狀態做決定 | `CqrsRules.COMMANDS_NEVER_READ_READ_MODEL` | 已驗證 |
-| CQRS-5 | — | — | 尚未實作 |
+| CQRS-5 | `adapters.projection.BoardProjection`（讀取模型唯一的寫入途徑） | `CqrsRules.ONLY_PROJECTION_WRITES_READ_MODEL`＋`BoardProjectionTest`（已處理過的事件再送一次_被略過_結果不變、catchUp連續呼叫兩次_結果不變） | 已驗證 |
 | CQRS-6 | — | — | 尚未實作 |

@@ -18,6 +18,11 @@ class CqrsRulesTest {
     }
 
     @Test
+    void CQRS5_讀取模型只由Projection更新() {
+        CqrsRules.ONLY_PROJECTION_WRITES_READ_MODEL.check(Imported.production());
+    }
+
+    @Test
     void CQRS4_寫入端不讀讀取模型() {
         CqrsRules.COMMANDS_NEVER_READ_READ_MODEL.check(Imported.production());
     }

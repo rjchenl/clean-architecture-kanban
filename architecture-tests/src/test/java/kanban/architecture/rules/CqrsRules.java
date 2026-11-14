@@ -2,7 +2,16 @@ package kanban.architecture.rules;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+
+import com.tngtech.archunit.core.domain.Dependency;
+import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaMethodCall;
+import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
+import java.util.Set;
 
 /** CQRS 的架構規則。規則編號對應專案 CLAUDE.md。 */
 public final class CqrsRules {
@@ -28,4 +37,36 @@ public final class CqrsRules {
             .that().resideInAnyPackage("..entities..", "..usecases.commands..", "..adapters.eventstore..")
             .should().dependOnClassesThat().resideInAnyPackage("..usecases.queries..", "..adapters.projection..")
             .as("CQRS-4 寫入端（聚合、指令 Use Case、事件庫）不得引用讀取模型");
+
+    private static final Set<String> READ_MODEL_WRITES =
+            Set.of("saveBoard", "saveCardHistory", "advanceCheckpoint", "reset", "inExclusiveTransaction");
+
+    /**
+     * CQRS-5、CA-11 ISP：讀取模型只能由 Projection 更新。
+     * (1) ReadModelStore 的寫入方法只有名稱以 Projection 結尾的類別可以呼叫；
+     * (2) ReadModelStore 這個型別只能被 adapters.projection 套件引用（Main 與最外圈不在檢查範圍）。
+     */
+    public static final ArchRule ONLY_PROJECTION_WRITES_READ_MODEL = classes()
+            .that().resideInAnyPackage("..entities..", "..usecases..", "..adapters..")
+            .should(new ArchCondition<>("不寫入讀取模型（Projection 除外）") {
+                @Override
+                public void check(JavaClass origin, ConditionEvents events) {
+                    boolean isProjection = origin.getSimpleName().endsWith("Projection");
+                    boolean inProjectionPackage = Shapes.inPackage(origin, "projection");
+                    for (JavaMethodCall call : origin.getMethodCallsFromSelf()) {
+                        boolean writesReadModel = call.getTargetOwner().getSimpleName().equals("ReadModelStore")
+                                && READ_MODEL_WRITES.contains(call.getTarget().getName());
+                        if (writesReadModel && !isProjection) {
+                            events.add(SimpleConditionEvent.violated(call, call.getDescription()));
+                        }
+                    }
+                    for (Dependency dependency : origin.getDirectDependenciesFromSelf()) {
+                        boolean usesStore = dependency.getTargetClass().getSimpleName().equals("ReadModelStore");
+                        if (usesStore && !inProjectionPackage) {
+                            events.add(SimpleConditionEvent.violated(dependency, dependency.getDescription()));
+                        }
+                    }
+                }
+            })
+            .as("CQRS-5 讀取模型只能由 Projection 根據事件更新");
 }

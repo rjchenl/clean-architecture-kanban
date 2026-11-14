@@ -5,5 +5,6 @@ module kanban.boardmanagement.adapters {
     requires tools.jackson.databind;
 
     exports kanban.boardmanagement.adapters.eventstore;
+    exports kanban.boardmanagement.adapters.projection;
     exports kanban.boardmanagement.adapters.system;
 }

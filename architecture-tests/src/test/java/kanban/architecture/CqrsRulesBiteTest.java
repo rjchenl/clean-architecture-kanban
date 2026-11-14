@@ -24,6 +24,16 @@ class CqrsRulesBiteTest {
     }
 
     @Test
+    void CQRS5_Controller直接寫讀取模型會被擋下() {
+        assertBites(CqrsRules.ONLY_PROJECTION_WRITES_READ_MODEL, "readmodelwrite");
+    }
+
+    @Test
+    void CQRS5_同套件裡不是Projection的類別寫讀取模型會被擋下() {
+        assertBites(CqrsRules.ONLY_PROJECTION_WRITES_READ_MODEL, "readmodelsidewrite");
+    }
+
+    @Test
     void CQRS4_指令UseCase用讀取模型做決定會被擋下() {
         assertBites(CqrsRules.COMMANDS_NEVER_READ_READ_MODEL, "commandreadsreadmodel");
     }
