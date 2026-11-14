@@ -152,7 +152,9 @@ public final class EntitiesRules {
                             continue;
                         }
                         for (JavaConstructorCall call : unit.getConstructorCallsFromSelf()) {
-                            if (call.getTargetOwner().isAssignableTo(Throwable.class)) {
+                            // MatchException 是 javac 替「窮舉的 switch」自動產生的，不是程式自己丟的
+                            boolean compilerGenerated = call.getTargetOwner().isEquivalentTo(MatchException.class);
+                            if (call.getTargetOwner().isAssignableTo(Throwable.class) && !compilerGenerated) {
                                 events.add(SimpleConditionEvent.violated(call, call.getDescription()));
                             }
                         }

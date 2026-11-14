@@ -25,7 +25,7 @@
 | DDD-1 | `docs/glossary.md` | `GlossaryTest` | 已實作未驗證（用詞審查待 Task 18） |
 | DDD-2 | `kanban.<情境>` 套件 | `DddRules.CONTEXTS_DO_NOT_SHARE_DOMAIN`（`DddRulesTest`、`DddRulesBiteTest`） | 已驗證（備註：目前只有一個業務情境，規則還沒被真實的第二個情境考驗過） |
 | DDD-3 | — | — | 尚未實作（第二階段） |
-| DDD-4 | `Board` 聚合（`Column`、`Card` 是非公開的內部 record） | `EntitiesRules.AGGREGATE_HAS_NO_SETTERS`、`AGGREGATE_INTERNALS_NOT_PUBLIC`＋聚合測試 `BoardLifecycleTest`、`ColumnRulesTest` | 已實作未驗證（卡片相關規則 R1、R2、R3、R5、R10 的聚合測試待 Task 5） |
+| DDD-4 | `Board` 聚合（`Column`、`Card` 是非公開的內部 record） | `EntitiesRules.AGGREGATE_HAS_NO_SETTERS`、`AGGREGATE_INTERNALS_NOT_PUBLIC`＋聚合測試：R1、R5 `CardRulesTest`（欄內有卡片不能刪欄、上限設得比現有張數低）；R2、R3、R10 `CardRulesTest`；R4、R7、R9、R11、R12 `ColumnRulesTest`、`CardRulesTest`；R6 `ValueObjectsTest`；R8 `BoardLifecycleTest`、`CardRulesTest`（已封存的看板拒絕所有變更） | 已驗證 |
 | DDD-5 | `Board` 聚合（目前唯一的聚合） | `EntitiesRules.AGGREGATE_REFERENCES_BY_ID`（附違規樣本） | 已實作未驗證（「一個指令只改一個聚合」的規則待 Task 8；備註：只有一個聚合，「聚合之間」那一半還沒有真實案例） |
 | DDD-6 | 9 個值物件：`BoardId`、`ColumnId`、`CardId`、`BoardName`、`ColumnName`、`CardTitle`、`CardDescription`、`WipLimit`、`Position` | `ValueObjectsTest`＋`EntitiesRules.VALUE_OBJECTS_AND_EVENTS_ARE_RECORDS` | 已驗證 |
 | DDD-7 | 14 個領域事件 record，共同型別 `BoardEvent` | `EntitiesRules.EVENTS_NAMED_IN_PAST_TENSE`、`VALUE_OBJECTS_AND_EVENTS_ARE_RECORDS` | 已驗證 |
@@ -34,7 +34,7 @@
 | ES-1 | — | — | 尚未實作 |
 | ES-2 | — | — | 尚未實作 |
 | ES-3 | `Board`：指令方法只做檢查與產生事件；`apply`／`on…` 方法只改狀態 | `EntitiesRules.APPLY_METHODS_DO_NOT_REJECT`、`STATE_CHANGES_ONLY_IN_APPLY`＋聚合測試 | 已驗證 |
-| ES-4 | Entities 圈不讀時鐘、不產生亂數 | `EntitiesRules.NO_CLOCK_OR_RANDOM_IN_ENTITIES` | 已實作未驗證（重播測試待 Task 5） |
+| ES-4 | `Board.rehydrate`；時間由指令方法的參數傳入 | `ReplayTest`（同一串事件重播兩次_後續指令的結果相同 等 7 支）＋`EntitiesRules.NO_CLOCK_OR_RANDOM_IN_ENTITIES` | 已驗證 |
 | ES-5 | `BoardScenario`（Given／When／Then） | `EntitiesRules.AGGREGATE_TESTS_USE_SCENARIO` | 已驗證 |
 | ES-6 | — | — | 尚未實作 |
 | ES-7 | — | — | 尚未實作 |

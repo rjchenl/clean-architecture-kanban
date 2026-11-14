@@ -21,6 +21,16 @@ record Column(ColumnId id, ColumnName name, WipLimit wipLimit, List<Card> cards)
         return new Column(id, name, wipLimit, newCards);
     }
 
+    /** 卡片在這一欄的位置；不在這一欄回傳 -1。 */
+    int indexOfCard(CardId cardId) {
+        for (int i = 0; i < cards.size(); i++) {
+            if (cards.get(i).id().equals(cardId)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     int cardCount() {
         return cards.size();
     }
