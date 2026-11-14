@@ -39,6 +39,21 @@ class CleanArchitectureRulesBiteTest {
     }
 
     @Test
+    void CA8_第3圈引用UseCase實作類別會被擋下() {
+        assertBites(CleanArchitectureRules.ONLY_MAIN_KNOWS_IMPLEMENTATIONS, "knowsusecaseimpl");
+    }
+
+    @Test
+    void CA8_第3圈自己建立轉接程式會被擋下() {
+        assertBites(CleanArchitectureRules.ONLY_MAIN_KNOWS_IMPLEMENTATIONS, "createsadapter");
+    }
+
+    @Test
+    void CA11_ISP_Controller直接用EventStore會被擋下() {
+        assertBites(CleanArchitectureRules.EVENT_ACCESS_IS_SEGREGATED, "eventaccess");
+    }
+
+    @Test
     void CA10_以controller當最上層套件會被擋下() {
         assertBites(CleanArchitectureRules.topLevelPackagesScream("kanban.fixtures.scream"), "scream");
     }

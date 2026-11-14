@@ -25,6 +25,26 @@ public final class DddRules {
 
     public static final ArchRule CONTEXTS_DO_NOT_SHARE_DOMAIN = contextsDoNotShareDomain("kanban");
 
+    /** DDD-8、CA-6：Gateway 介面在 Use Cases 圈，實作在 Interface Adapters 圈。 */
+    public static final ArchRule REPOSITORY_INTERFACE_INSIDE_IMPL_OUTSIDE = classes()
+            .that(new com.tngtech.archunit.base.DescribedPredicate<JavaClass>("是 Gateway 介面或它的實作") {
+                @Override
+                public boolean test(JavaClass type) {
+                    return Shapes.isGatewayInterface(type) || Shapes.implementsGateway(type);
+                }
+            })
+            .should(new ArchCondition<>("介面在 usecases、實作在 adapters") {
+                @Override
+                public void check(JavaClass type, ConditionEvents events) {
+                    String expected = Shapes.isGatewayInterface(type) ? "usecases" : "adapters";
+                    if (!Shapes.inPackage(type, expected)) {
+                        events.add(SimpleConditionEvent.violated(type,
+                                type.getName() + " 應該放在 " + expected + " 圈"));
+                    }
+                }
+            })
+            .as("DDD-8／CA-6 Gateway 介面在 Use Cases 圈，實作在 Interface Adapters 圈");
+
     private static ArchCondition<JavaClass> notUseAnotherContextsEntities(String root) {
         return new ArchCondition<>("不引用其他業務情境的 entities 套件") {
             @Override

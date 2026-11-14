@@ -49,6 +49,16 @@ class CleanArchitectureRulesTest {
     }
 
     @Test
+    void CA8_只有Main知道具體實作() {
+        CleanArchitectureRules.ONLY_MAIN_KNOWS_IMPLEMENTATIONS.check(Imported.production());
+    }
+
+    @Test
+    void CA11_ISP_事件存取依使用者拆開() {
+        CleanArchitectureRules.EVENT_ACCESS_IS_SEGREGATED.check(Imported.production());
+    }
+
+    @Test
     void CA10_最上層套件是業務情境() {
         CleanArchitectureRules.TOP_LEVEL_PACKAGES_SCREAM.check(Imported.production());
     }
