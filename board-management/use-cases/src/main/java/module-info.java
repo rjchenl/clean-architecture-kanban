@@ -19,4 +19,7 @@ module kanban.boardmanagement.usecases {
     exports kanban.boardmanagement.usecases.commands.repositioncard;
     exports kanban.boardmanagement.usecases.commands.removecard;
     exports kanban.boardmanagement.usecases.eventfeed;
+    exports kanban.boardmanagement.usecases.queries.viewboard;
+    exports kanban.boardmanagement.usecases.queries.listboards;
+    exports kanban.boardmanagement.usecases.queries.viewcardhistory;
 }
