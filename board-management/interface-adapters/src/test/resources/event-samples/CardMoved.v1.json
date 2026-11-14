@@ -1,0 +1,8 @@
+{
+  "boardId": "board-1",
+  "cardId": "card-1",
+  "fromColumnId": "col-todo",
+  "toColumnId": "col-doing",
+  "toPosition": 0,
+  "occurredAt": "2026-11-14T01:00:00Z"
+}

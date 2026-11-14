@@ -37,7 +37,7 @@
 | ES-4 | `Board.rehydrate`；時間由指令方法的參數傳入 | `ReplayTest`（同一串事件重播兩次_後續指令的結果相同 等 7 支）＋`EntitiesRules.NO_CLOCK_OR_RANDOM_IN_ENTITIES` | 已驗證 |
 | ES-5 | `BoardScenario`（Given／When／Then） | `EntitiesRules.AGGREGATE_TESTS_USE_SCENARIO` | 已驗證 |
 | ES-6 | `EventStore.append` 的預期版本號 | `EventStoreContract.預期版本不符_丟ConcurrentUpdateException且不寫入任何事件`、`InMemoryEventStoreTest.十條執行緒同時寫入同一個預期版本_恰好一條成功` | 已實作未驗證（PostgreSQL 版待 Task 14） |
-| ES-7 | — | — | 尚未實作 |
+| ES-7 | `adapters.eventstore.BoardEventJson`（事件類型名稱、格式版本、upcaster）；樣本檔 `interface-adapters/src/test/resources/event-samples/` | `BoardEventJsonTest`（樣本檔都讀得回來、每種事件的每個版本都有樣本檔、CardAdded_v1_讀回來時說明是空字串） | 已驗證 |
 | ES-8 | — | — | 尚未實作 |
 | CQRS-1 | — | — | 尚未實作 |
 | CQRS-2 | `CommandResponse`（成功與否、失敗原因、識別碼） | `UseCaseRules.COMMAND_RESPONSE_CARRIES_NO_VIEW_DATA` | 已實作未驗證（查詢端待 Task 10） |
