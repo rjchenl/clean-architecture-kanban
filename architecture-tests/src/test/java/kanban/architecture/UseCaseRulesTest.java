@@ -51,6 +51,41 @@ class UseCaseRulesTest {
     }
 
     @Test
+    void CQRS4_UseCase套件裡只有邊界與RequestResponse() {
+        UseCaseRules.USECASE_PACKAGES_HOLD_ONLY_BOUNDARY_TYPES.check(Imported.production());
+    }
+
+    @Test
+    void CQRS4_指令UseCase只用寫入端Gateway() {
+        UseCaseRules.COMMAND_USECASES_USE_ONLY_WRITE_GATEWAYS.check(Imported.production());
+    }
+
+    @Test
+    void CA7_Adapters模組宣告只requires允許的模組() throws IOException {
+        String moduleInfo = Files.readString(
+                Path.of("..", "board-management", "interface-adapters", "src", "main", "java", "module-info.java"));
+
+        assertThat(requiredModules(moduleInfo)).containsExactlyInAnyOrder(
+                "kanban.boardmanagement.usecases", "java.sql", "tools.jackson.databind");
+    }
+
+    @Test
+    void CA2_CA3_內兩圈的模組宣告不requires任何外部模組() throws IOException {
+        String entities = Files.readString(
+                Path.of("..", "board-management", "entities", "src", "main", "java", "module-info.java"));
+        String useCases = Files.readString(
+                Path.of("..", "board-management", "use-cases", "src", "main", "java", "module-info.java"));
+
+        assertThat(requiredModules(entities)).isEmpty();
+        assertThat(requiredModules(useCases)).containsExactly("kanban.boardmanagement.entities");
+    }
+
+    private static List<String> requiredModules(String moduleInfo) {
+        Matcher matcher = Pattern.compile("requires\\s+(?:transitive\\s+)?([\\w.]+)\\s*;").matcher(moduleInfo);
+        return matcher.results().map(result -> result.group(1)).toList();
+    }
+
+    @Test
     void CA16_模組宣告不公開impl與support套件() throws IOException {
         String moduleInfo = Files.readString(
                 Path.of("..", "board-management", "use-cases", "src", "main", "java", "module-info.java"));

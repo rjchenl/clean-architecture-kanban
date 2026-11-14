@@ -155,6 +155,23 @@ class BoardHttpIntegrationTest extends HttpTestSupport {
     }
 
     @Test
+    void 名稱含NUL字元_422而不是500() {
+        // 這種字元 PostgreSQL 存不進去；必須被當成不合法的輸入，而不是系統錯誤
+        Reply reply = post("/api/boards", "{\"name\":\"a\\u0000b\"}");
+
+        assertThat(reply.status()).isEqualTo(422);
+        assertThat(reply.text("message")).isEqualTo("內容含有不能使用的字元");
+    }
+
+    @Test
+    void 網址裡的識別碼含控制字元_不是500() {
+        Reply reply = get("/api/boards/board%00x");
+
+        // 伺服器在進到應用程式之前就擋下這種網址
+        assertThat(reply.status()).isEqualTo(400);
+    }
+
+    @Test
     void 名稱空白_422且訊息出自Presenter() {
         Reply reply = post("/api/boards", "{\"name\":\"   \"}");
 

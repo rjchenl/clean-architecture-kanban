@@ -53,6 +53,32 @@ public final class EventSourcingRules {
             })
             .as("ES-1 寫入端只有事件紀錄，不得另存聚合現況");
 
+    private static final Set<String> JDBC_USERS = Set.of("PostgresEventStore", "PostgresReadModelStore");
+
+    /**
+     * ES-1：Interface Adapters 圈只有 PostgreSQL 版的事件庫與讀取模型可以碰資料庫。
+     * 其他類別一用到 java.sql／javax.sql 就違規——所以沒有地方能偷偷另存一份「看板現況」。
+     */
+    public static final ArchRule JDBC_ONLY_IN_POSTGRES_STORES = classes()
+            .that().resideInAPackage("..adapters..")
+            .should(new ArchCondition<>("不使用 JDBC（事件庫與讀取模型的 PostgreSQL 版除外）") {
+                @Override
+                public void check(JavaClass type, ConditionEvents events) {
+                    JavaClass topLevel = type;
+                    while (topLevel.getEnclosingClass().isPresent()) {
+                        topLevel = topLevel.getEnclosingClass().get();
+                    }
+                    if (JDBC_USERS.contains(topLevel.getSimpleName())) {
+                        return;
+                    }
+                    type.getDirectDependenciesFromSelf().stream()
+                            .filter(d -> d.getTargetClass().getPackageName().startsWith("java.sql")
+                                    || d.getTargetClass().getPackageName().startsWith("javax.sql"))
+                            .forEach(d -> events.add(SimpleConditionEvent.violated(d, d.getDescription())));
+                }
+            })
+            .as("ES-1 只有 PostgresEventStore 與 PostgresReadModelStore 可以使用 JDBC");
+
     private static boolean isRepositoryImplementation(JavaClass type) {
         return !type.isInterface()
                 && type.getAllRawInterfaces().stream().anyMatch(i -> i.getSimpleName().endsWith("Repository"));

@@ -68,12 +68,24 @@ abstract class HttpTestSupport {
         return builder.method(method, body).header("Content-Type", "application/json");
     }
 
+    /** 回覆不是 JSON（例如伺服器自己擋下的請求回 HTML 錯誤頁）時，內容視為沒有。 */
+    private static JsonNode parse(String body) {
+        if (body == null || body.isBlank()) {
+            return null;
+        }
+        try {
+            return JSON.readTree(body);
+        } catch (tools.jackson.core.JacksonException notJson) {
+            return null;
+        }
+    }
+
     private Reply send(HttpRequest.Builder request) {
         try {
             HttpResponse<String> response = client.send(request.build(),
                     HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             String body = response.body();
-            return new Reply(response.statusCode(), body == null || body.isBlank() ? null : JSON.readTree(body));
+            return new Reply(response.statusCode(), parse(body));
         } catch (java.io.IOException e) {
             throw new IllegalStateException(e);
         } catch (InterruptedException e) {

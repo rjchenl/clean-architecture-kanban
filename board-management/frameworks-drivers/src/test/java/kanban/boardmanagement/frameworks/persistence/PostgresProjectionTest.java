@@ -67,6 +67,28 @@ class PostgresProjectionTest {
     }
 
     @Test
+    void 事件紀錄裡出現不認得的事件_前面的正常事件照樣投影_然後明確報錯停住() throws Exception {
+        // 第 9 筆是這一版程式不認得的事件類型（例如較新版本寫入的）
+        try (var connection = PostgresTestDatabase.dataSource().getConnection();
+             var statement = connection.createStatement()) {
+            statement.execute("INSERT INTO board_events (stream_id, stream_version, event_type, schema_version, payload, "
+                    + "occurred_at) VALUES ('board-board-1', 9, 'BoardExploded', 1, '{}'::jsonb, now())");
+        }
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(projection::catchUp)
+                .isInstanceOf(kanban.boardmanagement.adapters.eventstore.UnknownEventTypeException.class)
+                .hasMessageContaining("BoardExploded");
+
+        assertThat(store.checkpoint()).as("同一批裡前 8 筆正常事件不受連累").isEqualTo(8);
+        assertThat(store.boardById("board-1")).isPresent();
+
+        // 再補一次：仍然停在同一筆、明確報錯，不會默默略過
+        org.assertj.core.api.Assertions.assertThatThrownBy(projection::catchUp)
+                .isInstanceOf(kanban.boardmanagement.adapters.eventstore.UnknownEventTypeException.class);
+        assertThat(store.checkpoint()).isEqualTo(8);
+    }
+
+    @Test
     void catchUp兩次結果不變() {
         projection.catchUp();
         BoardSnapshot board = store.boardById("board-1").orElseThrow();

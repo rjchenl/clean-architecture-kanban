@@ -132,6 +132,26 @@ class BoardEventJsonTest {
     }
 
     @Test
+    void 落在現行驗證規則邊界上的舊事件都讀得回來() throws IOException, URISyntaxException {
+        // ES-7：收緊值物件的驗證規則＝改變事件格式。這支測試在那時會失敗，提醒先處理已經存在的舊事件。
+        Path limits = Path.of(BoardEventJsonTest.class.getResource("/event-samples-limits/README.md").toURI()).getParent();
+        List<Path> files;
+        try (Stream<Path> listed = Files.list(limits)) {
+            files = listed.filter(file -> file.getFileName().toString().endsWith(".json")).sorted().toList();
+        }
+
+        assertThat(files).hasSize(8);
+        for (Path file : files) {
+            String[] parts = file.getFileName().toString().replace(".json", "").split("\\.v");
+            StoredEvent stored = new StoredEvent(parts[0], Integer.parseInt(parts[1]), Files.readString(file));
+
+            BoardEvent event = json.fromStored(stored);
+
+            assertThat(json.fromStored(json.toStored(event))).as(file.getFileName().toString()).isEqualTo(event);
+        }
+    }
+
+    @Test
     void 每種事件的每個版本都有樣本檔() throws IOException {
         List<String> required = new ArrayList<>();
         json.latestVersions().forEach((type, latest) -> {

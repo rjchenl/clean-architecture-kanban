@@ -6,6 +6,7 @@
 // 畫面不先改資料、不判斷操作能不能做（規則 CA-9）。
 import { onMounted, ref } from 'vue'
 import * as api from '../api/boardApi'
+import { SERVICE_UNAVAILABLE_MESSAGE } from '../api/serviceUnavailable'
 import type { BoardViewModel, CommandViewModel } from '../api/viewModels'
 import ColumnPanel from '../components/ColumnPanel.vue'
 import MessageBar from '../components/MessageBar.vue'
@@ -18,12 +19,22 @@ const newBoardName = ref('')
 const newColumnName = ref('')
 
 async function reload() {
-  board.value = await api.viewBoard(props.boardId)
+  try {
+    board.value = await api.viewBoard(props.boardId)
+  } catch {
+    // 後端沒有給出 ViewModel：顯示系統錯誤訊息，畫面上原本的看板保持不動
+    message.value = SERVICE_UNAVAILABLE_MESSAGE
+  }
 }
 
 async function run(command: Promise<CommandViewModel>) {
-  const result = await command
-  message.value = result.message
+  try {
+    const result = await command
+    message.value = result.message
+  } catch {
+    message.value = SERVICE_UNAVAILABLE_MESSAGE
+    return
+  }
   await reload()
 }
 
@@ -49,14 +60,14 @@ onMounted(reload)
 <template>
   <p v-if="board && !board.found">找不到這個看板。<RouterLink to="/">回看板清單</RouterLink></p>
 
+  <div v-if="board && board.found" class="board-heading">
+    <h1 data-testid="board-name">{{ board.name }}</h1>
+    <span v-if="board.archivedLabel" class="tag" data-testid="archived-label">{{ board.archivedLabel }}</span>
+  </div>
+
+  <MessageBar :message="message" />
+
   <template v-if="board && board.found">
-    <div class="board-heading">
-      <h1 data-testid="board-name">{{ board.name }}</h1>
-      <span v-if="board.archivedLabel" class="tag" data-testid="archived-label">{{ board.archivedLabel }}</span>
-    </div>
-
-    <MessageBar :message="message" />
-
     <div class="board-actions">
       <form class="inline-form" @submit.prevent="renameBoard">
         <input v-model="newBoardName" placeholder="新的看板名稱" aria-label="新的看板名稱" />

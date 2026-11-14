@@ -45,6 +45,7 @@ class CommandPresenterTest {
             "DESCRIPTION_TOO_LONG,       REJECTED,  說明最長 2000 字",
             "WIP_LIMIT_NOT_POSITIVE,     REJECTED,  在製品上限必須是 1 以上的整數",
             "POSITION_OUT_OF_RANGE,      REJECTED,  位置超出範圍",
+            "INVALID_CHARACTERS,         REJECTED,  內容含有不能使用的字元",
             "IDENTIFIER_BLANK,           REJECTED,  請求內容不完整或格式不正確",
             "INVALID_REQUEST,            REJECTED,  請求內容不完整或格式不正確",
             "SOMETHING_NEW,              REJECTED,  請求內容不完整或格式不正確",

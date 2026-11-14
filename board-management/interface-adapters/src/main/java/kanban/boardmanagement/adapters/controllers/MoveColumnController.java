@@ -13,9 +13,6 @@ public final class MoveColumnController {
     }
 
     public void handle(String boardId, String columnId, Integer toPosition) {
-        if (toPosition == null) {
-            throw new IllegalArgumentException("toPosition");
-        }
         input.execute(new MoveColumnRequest(boardId, columnId, toPosition));
     }
 }

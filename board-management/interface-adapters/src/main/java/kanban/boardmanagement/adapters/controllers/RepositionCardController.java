@@ -13,9 +13,6 @@ public final class RepositionCardController {
     }
 
     public void handle(String boardId, String cardId, Integer toPosition) {
-        if (toPosition == null) {
-            throw new IllegalArgumentException("toPosition");
-        }
         input.execute(new RepositionCardRequest(boardId, cardId, toPosition));
     }
 }

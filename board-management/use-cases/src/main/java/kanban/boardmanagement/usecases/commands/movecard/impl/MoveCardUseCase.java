@@ -26,7 +26,7 @@ public final class MoveCardUseCase implements MoveCardInput {
     @Override
     public void execute(MoveCardRequest request) {
         output.present(BoardCommand.onExistingBoard(boards,
-                () -> BoardCommand.required(request.boardId(), request.cardId(), request.toColumnId()),
+                () -> BoardCommand.required(request.boardId(), request.cardId(), request.toColumnId(), request.toPosition()),
                 board -> {
                     board.moveCard(new CardId(request.cardId()), new ColumnId(request.toColumnId()),
                     new Position(request.toPosition()), time.now());

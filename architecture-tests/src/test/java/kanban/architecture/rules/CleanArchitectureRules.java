@@ -47,12 +47,15 @@ public final class CleanArchitectureRules {
             .should().onlyDependOnClassesThat().resideInAnyPackage("java..", "..entities..", "..usecases..")
             .as("CA-3 Use Cases 圈只能使用 JDK、Entities 圈與自己");
 
-    /** CA-7：Interface Adapters 圈不得使用框架與資料庫驅動程式。 */
-    public static final ArchRule ADAPTERS_FREE_OF_FRAMEWORKS = noClasses()
+    /**
+     * CA-7：Interface Adapters 圈只能使用 JDK（含 java.sql／javax.sql）、Jackson 與內兩圈。
+     * 走允許清單：任何其他函式庫或框架（Spring、Jakarta、資料庫驅動程式、Tomcat、ORM…）都會被擋下。
+     */
+    public static final ArchRule ADAPTERS_FREE_OF_FRAMEWORKS = classes()
             .that().resideInAPackage("..adapters..")
-            .should().dependOnClassesThat().resideInAnyPackage(
-                    "org.springframework..", "jakarta..", "org.postgresql..", "com.zaxxer..", "org.flywaydb..")
-            .as("CA-7 Interface Adapters 圈不得使用 Spring、Jakarta、資料庫驅動程式、連線池、Flyway");
+            .should().onlyDependOnClassesThat().resideInAnyPackage(
+                    "java..", "javax.sql..", "tools.jackson..", "..entities..", "..usecases..", "..adapters..")
+            .as("CA-7 Interface Adapters 圈只能使用 JDK、Jackson 與內兩圈");
 
     /** CA-7：Spring 只能出現在最外圈與 Main。 */
     public static final ArchRule SPRING_ANNOTATIONS_ONLY_IN_OUTER_RING = noClasses()
@@ -101,7 +104,11 @@ public final class CleanArchitectureRules {
                             events.add(SimpleConditionEvent.violated(dependency, dependency.getDescription()));
                         }
                     }
-                    for (JavaConstructorCall call : origin.getConstructorCallsFromSelf()) {
+                    java.util.List<com.tngtech.archunit.core.domain.JavaCodeUnitAccess<?>> creations = new java.util.ArrayList<>();
+                    creations.addAll(origin.getConstructorCallsFromSelf());
+                    // 建構子參考（SomeAdapter::new）也是在建立物件
+                    creations.addAll(origin.getConstructorReferencesFromSelf());
+                    for (com.tngtech.archunit.core.domain.JavaCodeUnitAccess<?> call : creations) {
                         JavaClass target = call.getTargetOwner();
                         boolean createsAdapter = Shapes.inPackage(target, "adapters")
                                 && Shapes.isBehaviourClass(target)
@@ -141,4 +148,14 @@ public final class CleanArchitectureRules {
                 }
             })
             .as("CA-11 ISP EventStore 只給 adapters.eventstore 用；EventFeed 只給 adapters.eventstore 與 adapters.projection 用");
+
+    /**
+     * CA-10、ES-1：Interface Adapters 圈的套件走允許清單。
+     * 想新開一個套件放別的東西（例如另存看板現況的儲存），要先改這份清單。
+     */
+    public static final ArchRule ADAPTER_PACKAGES_ON_ALLOW_LIST = classes()
+            .that().resideInAPackage("..adapters..")
+            .should().resideInAnyPackage("..adapters.controllers", "..adapters.presenters", "..adapters.eventstore",
+                    "..adapters.projection", "..adapters.system")
+            .as("CA-10 Interface Adapters 圈只有 controllers、presenters、eventstore、projection、system 五個套件");
 }

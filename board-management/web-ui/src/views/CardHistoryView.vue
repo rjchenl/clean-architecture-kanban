@@ -2,18 +2,27 @@
 // 卡片移動歷程：時間與描述都是後端整理好的文字，這裡原樣顯示。
 import { onMounted, ref } from 'vue'
 import * as api from '../api/boardApi'
+import { SERVICE_UNAVAILABLE_MESSAGE } from '../api/serviceUnavailable'
 import type { CardHistoryViewModel } from '../api/viewModels'
+import MessageBar from '../components/MessageBar.vue'
 
 const props = defineProps<{ boardId: string; cardId: string }>()
 const history = ref<CardHistoryViewModel | null>(null)
+const message = ref('')
 
 onMounted(async () => {
-  history.value = await api.viewCardHistory(props.boardId, props.cardId)
+  try {
+    history.value = await api.viewCardHistory(props.boardId, props.cardId)
+  } catch {
+    message.value = SERVICE_UNAVAILABLE_MESSAGE
+  }
 })
 </script>
 
 <template>
   <p><RouterLink :to="`/boards/${boardId}`">← 回看板</RouterLink></p>
+
+  <MessageBar :message="message" />
 
   <p v-if="history && !history.found">找不到這張卡片的移動歷程。</p>
 

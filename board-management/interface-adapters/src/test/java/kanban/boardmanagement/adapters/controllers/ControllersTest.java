@@ -1,7 +1,6 @@
 package kanban.boardmanagement.adapters.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -81,13 +80,12 @@ class ControllersTest {
     }
 
     @Test
-    void MoveColumn_數字參數為null_不呼叫Input並丟IllegalArgumentException() {
+    void MoveColumn_數字參數沒給_原樣交給UseCase判斷() {
         List<MoveColumnRequest> received = new ArrayList<>();
 
-        assertThatThrownBy(() -> new MoveColumnController(received::add).handle("x", "x", null))
-                .isInstanceOf(IllegalArgumentException.class).hasMessage("toPosition");
+        new MoveColumnController(received::add).handle("x", "x", null);
 
-        assertThat(received).isEmpty();
+        assertThat(received).containsExactly(new MoveColumnRequest("x", "x", null));
     }
 
     @Test
@@ -100,13 +98,12 @@ class ControllersTest {
     }
 
     @Test
-    void SetColumnWipLimit_數字參數為null_不呼叫Input並丟IllegalArgumentException() {
+    void SetColumnWipLimit_數字參數沒給_原樣交給UseCase判斷() {
         List<SetColumnWipLimitRequest> received = new ArrayList<>();
 
-        assertThatThrownBy(() -> new SetColumnWipLimitController(received::add).handle("x", "x", null))
-                .isInstanceOf(IllegalArgumentException.class).hasMessage("limit");
+        new SetColumnWipLimitController(received::add).handle("x", "x", null);
 
-        assertThat(received).isEmpty();
+        assertThat(received).containsExactly(new SetColumnWipLimitRequest("x", "x", null));
     }
 
     @Test
@@ -155,13 +152,12 @@ class ControllersTest {
     }
 
     @Test
-    void MoveCard_數字參數為null_不呼叫Input並丟IllegalArgumentException() {
+    void MoveCard_數字參數沒給_原樣交給UseCase判斷() {
         List<MoveCardRequest> received = new ArrayList<>();
 
-        assertThatThrownBy(() -> new MoveCardController(received::add).handle("x", "x", "x", null))
-                .isInstanceOf(IllegalArgumentException.class).hasMessage("toPosition");
+        new MoveCardController(received::add).handle("x", "x", "x", null);
 
-        assertThat(received).isEmpty();
+        assertThat(received).containsExactly(new MoveCardRequest("x", "x", "x", null));
     }
 
     @Test
@@ -174,13 +170,12 @@ class ControllersTest {
     }
 
     @Test
-    void RepositionCard_數字參數為null_不呼叫Input並丟IllegalArgumentException() {
+    void RepositionCard_數字參數沒給_原樣交給UseCase判斷() {
         List<RepositionCardRequest> received = new ArrayList<>();
 
-        assertThatThrownBy(() -> new RepositionCardController(received::add).handle("x", "x", null))
-                .isInstanceOf(IllegalArgumentException.class).hasMessage("toPosition");
+        new RepositionCardController(received::add).handle("x", "x", null);
 
-        assertThat(received).isEmpty();
+        assertThat(received).containsExactly(new RepositionCardRequest("x", "x", null));
     }
 
     @Test

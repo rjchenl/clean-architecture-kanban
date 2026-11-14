@@ -13,9 +13,6 @@ public final class SetColumnWipLimitController {
     }
 
     public void handle(String boardId, String columnId, Integer limit) {
-        if (limit == null) {
-            throw new IllegalArgumentException("limit");
-        }
         input.execute(new SetColumnWipLimitRequest(boardId, columnId, limit));
     }
 }

@@ -2,6 +2,7 @@
 // 看板清單：顯示後端給的清單；建立看板後顯示後端給的訊息並重新讀取清單。
 import { onMounted, ref } from 'vue'
 import * as api from '../api/boardApi'
+import { SERVICE_UNAVAILABLE_MESSAGE } from '../api/serviceUnavailable'
 import type { BoardListViewModel } from '../api/viewModels'
 import MessageBar from '../components/MessageBar.vue'
 
@@ -10,12 +11,21 @@ const message = ref('')
 const newBoardName = ref('')
 
 async function reload() {
-  list.value = await api.listBoards()
+  try {
+    list.value = await api.listBoards()
+  } catch {
+    message.value = SERVICE_UNAVAILABLE_MESSAGE
+  }
 }
 
 async function createBoard() {
-  const result = await api.createBoard(newBoardName.value)
-  message.value = result.message
+  try {
+    const result = await api.createBoard(newBoardName.value)
+    message.value = result.message
+  } catch {
+    message.value = SERVICE_UNAVAILABLE_MESSAGE
+    return
+  }
   newBoardName.value = ''
   await reload()
 }

@@ -89,7 +89,17 @@ public final class PostgresEventStore implements EventStore, EventFeed {
             try (ResultSet rows = statement.executeQuery()) {
                 List<RecordedEvent> events = new ArrayList<>();
                 while (rows.next()) {
-                    events.add(new RecordedEvent(rows.getLong(4), eventOf(rows)));
+                    long eventPosition = rows.getLong(4);
+                    try {
+                        events.add(new RecordedEvent(eventPosition, eventOf(rows)));
+                    } catch (UnknownEventTypeException unreadable) {
+                        // 讀不懂的那一筆不可以連累它前面的正常事件：先把前面的交出去。
+                        // 下一次從它前一筆之後再讀，它就是第一筆，屆時明確報錯（不會被默默略過）。
+                        if (events.isEmpty()) {
+                            throw unreadable;
+                        }
+                        return events;
+                    }
                 }
                 return events;
             }

@@ -25,7 +25,7 @@ public final class RepositionCardUseCase implements RepositionCardInput {
     @Override
     public void execute(RepositionCardRequest request) {
         output.present(BoardCommand.onExistingBoard(boards,
-                () -> BoardCommand.required(request.boardId(), request.cardId()),
+                () -> BoardCommand.required(request.boardId(), request.cardId(), request.toPosition()),
                 board -> {
                     board.repositionCard(new CardId(request.cardId()), new Position(request.toPosition()), time.now());
                     return null;

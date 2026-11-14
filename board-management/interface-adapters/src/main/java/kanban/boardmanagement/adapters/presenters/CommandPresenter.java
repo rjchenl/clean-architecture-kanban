@@ -32,7 +32,8 @@ public class CommandPresenter {
             Map.entry("NAME_TOO_LONG", new Wording(CommandOutcome.REJECTED, "名稱最長 100 字")),
             Map.entry("DESCRIPTION_TOO_LONG", new Wording(CommandOutcome.REJECTED, "說明最長 2000 字")),
             Map.entry("WIP_LIMIT_NOT_POSITIVE", new Wording(CommandOutcome.REJECTED, "在製品上限必須是 1 以上的整數")),
-            Map.entry("POSITION_OUT_OF_RANGE", new Wording(CommandOutcome.REJECTED, "位置超出範圍")));
+            Map.entry("POSITION_OUT_OF_RANGE", new Wording(CommandOutcome.REJECTED, "位置超出範圍")),
+            Map.entry("INVALID_CHARACTERS", new Wording(CommandOutcome.REJECTED, "內容含有不能使用的字元")));
 
     private CommandViewModel viewModel;
 

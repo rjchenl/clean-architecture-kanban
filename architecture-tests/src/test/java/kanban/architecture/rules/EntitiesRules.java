@@ -141,16 +141,37 @@ public final class EntitiesRules {
             .should().notBePublic()
             .as("DDD-4 聚合內部的實體不得是 public");
 
-    /** ES-3：套用事件的方法不檢查、不拒絕、不再產生事件。 */
+    /** 從套用方法出發，沿著「呼叫聚合自己的方法」一路找下去，回傳全部會被執行到的方法。 */
+    private static Set<JavaCodeUnit> reachableFromApplyMethods(JavaClass aggregate) {
+        Set<JavaCodeUnit> reached = new java.util.LinkedHashSet<>();
+        java.util.Deque<JavaCodeUnit> pending = new java.util.ArrayDeque<>();
+        aggregate.getCodeUnits().stream().filter(EntitiesRules::isApplyMethod).forEach(pending::add);
+        while (!pending.isEmpty()) {
+            JavaCodeUnit unit = pending.pop();
+            if (!reached.add(unit)) {
+                continue;
+            }
+            for (JavaMethodCall call : unit.getMethodCallsFromSelf()) {
+                if (call.getTargetOwner().equals(aggregate)) {
+                    aggregate.getCodeUnits().stream()
+                            .filter(candidate -> candidate.getName().equals(call.getTarget().getName()))
+                            .forEach(pending::add);
+                }
+            }
+        }
+        return reached;
+    }
+
+    /**
+     * ES-3：套用事件的方法不檢查、不拒絕、不再產生事件。
+     * 不只看套用方法本身，也看它呼叫到的每一個聚合自己的方法（間接丟例外一樣算）。
+     */
     public static final ArchRule APPLY_METHODS_DO_NOT_REJECT = classes()
             .that(AGGREGATE_ROOT)
-            .should(new ArchCondition<>("在 apply／on… 方法裡不丟例外、不呼叫 require…、不呼叫 record") {
+            .should(new ArchCondition<>("在 apply／on… 方法與它們呼叫到的自家方法裡，不丟例外、不呼叫 require…、不呼叫 record") {
                 @Override
                 public void check(JavaClass aggregate, ConditionEvents events) {
-                    for (JavaCodeUnit unit : aggregate.getCodeUnits()) {
-                        if (!isApplyMethod(unit)) {
-                            continue;
-                        }
+                    for (JavaCodeUnit unit : reachableFromApplyMethods(aggregate)) {
                         for (JavaConstructorCall call : unit.getConstructorCallsFromSelf()) {
                             // MatchException 是 javac 替「窮舉的 switch」自動產生的，不是程式自己丟的
                             boolean compilerGenerated = call.getTargetOwner().isEquivalentTo(MatchException.class);
@@ -169,13 +190,19 @@ public final class EntitiesRules {
                     }
                 }
             })
-            .as("ES-3 套用事件的方法不得檢查規則、丟例外或再產生事件");
+            .as("ES-3 套用事件的方法（含它呼叫到的自家方法）不得檢查規則、丟例外或再產生事件");
 
     /** ES-3：聚合的狀態只能在套用事件的方法裡改變。 */
     public static final ArchRule STATE_CHANGES_ONLY_IN_APPLY = classes()
             .that(AGGREGATE_ROOT)
-            .should(new ArchCondition<>("只在 apply／on… 方法裡寫入自己的欄位") {
+            .should(new ArchCondition<>("只在 apply／on… 方法裡寫入自己的欄位，也不在別處修改集合內容") {
                 private static final Set<String> BOOKKEEPING_FIELDS = Set.of("persistedVersion", "pendingEvents");
+                /** 只負責「記下新事件／清掉已存的事件」的方法，可以動未提交事件清單。 */
+                private static final Set<String> BOOKKEEPING_METHODS = Set.of("record", "markCommitted");
+                private static final Set<String> COLLECTION_MUTATORS = Set.of("add", "addAll", "addFirst", "addLast",
+                        "remove", "removeAll", "removeIf", "removeFirst", "removeLast", "retainAll", "clear", "set",
+                        "sort", "replaceAll", "put", "putAll", "putIfAbsent", "compute", "computeIfAbsent",
+                        "computeIfPresent", "merge", "push", "pop", "offer", "poll");
 
                 @Override
                 public void check(JavaClass aggregate, ConditionEvents events) {
@@ -190,6 +217,17 @@ public final class EntitiesRules {
                             boolean initializer = unit.isConstructor() && access.getTarget().getName().equals("columns");
                             if (writesOwnState && !initializer) {
                                 events.add(SimpleConditionEvent.violated(access, access.getDescription()));
+                            }
+                        }
+                        // 狀態若放在可變集合裡，不必指定欄位也改得動——所以指令方法也不准呼叫集合的修改方法
+                        if (BOOKKEEPING_METHODS.contains(unit.getName())) {
+                            continue;
+                        }
+                        for (JavaMethodCall call : unit.getMethodCallsFromSelf()) {
+                            boolean onCollection = call.getTargetOwner().isAssignableTo(Collection.class)
+                                    || call.getTargetOwner().isAssignableTo(Map.class);
+                            if (onCollection && COLLECTION_MUTATORS.contains(call.getTarget().getName())) {
+                                events.add(SimpleConditionEvent.violated(call, call.getDescription()));
                             }
                         }
                     }

@@ -13,9 +13,6 @@ public final class MoveCardController {
     }
 
     public void handle(String boardId, String cardId, String toColumnId, Integer toPosition) {
-        if (toPosition == null) {
-            throw new IllegalArgumentException("toPosition");
-        }
         input.execute(new MoveCardRequest(boardId, cardId, toColumnId, toPosition));
     }
 }

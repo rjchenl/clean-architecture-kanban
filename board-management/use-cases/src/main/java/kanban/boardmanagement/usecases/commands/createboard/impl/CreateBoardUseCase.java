@@ -28,11 +28,8 @@ public final class CreateBoardUseCase implements CreateBoardInput {
 
     @Override
     public void execute(CreateBoardRequest request) {
-        output.present(BoardCommand.onNewBoard(boards, () -> {
-            BoardCommand.required("new", request.name());
-            String newId = ids.nextId();
-            Board board = Board.create(new BoardId(newId), new BoardName(request.name()), time.now());
-            return board;
-        }));
+        output.present(BoardCommand.onNewBoard(boards,
+                () -> BoardCommand.required(request.name()),
+                () -> Board.create(new BoardId(ids.nextId()), new BoardName(request.name()), time.now())));
     }
 }

@@ -198,12 +198,28 @@ public final class UseCaseRules {
             })
             .as("CQRS-2 指令的 Response Model 只含成功或失敗、失敗原因與必要的識別碼");
 
-    /** CA-16：impl 套件裡只有 Use Case 的實作類別（final），沒有其他多餘的公開型別。 */
+    /**
+     * CA-16、CA-4：impl 套件裡只有 Use Case 的實作類別——final、名稱以 UseCase 結尾，
+     * 而且實作上一層套件裡同名的 Input Boundary。沒有實作 Input 的類別不准放在這裡。
+     */
     public static final ArchRule NO_UNNECESSARY_PUBLIC = classes()
             .that(useCaseType("在 impl 套件", type -> Shapes.inPackage(type, "impl")))
-            .should().haveSimpleNameEndingWith("UseCase")
-            .andShould().haveModifier(JavaModifier.FINAL)
-            .as("CA-16 impl 套件只放 final 的 Use Case 實作類別");
+            .should(new ArchCondition<>("是 final 的 …UseCase，並實作同名的 …Input") {
+                @Override
+                public void check(JavaClass type, ConditionEvents events) {
+                    String name = type.getSimpleName();
+                    boolean named = name.endsWith("UseCase");
+                    String expectedInput = named ? stem(type, "UseCase") + "Input" : "";
+                    String parentPackage = type.getPackageName().substring(0, type.getPackageName().length() - ".impl".length());
+                    boolean implementsOwnInput = type.getRawInterfaces().stream()
+                            .anyMatch(i -> i.getSimpleName().equals(expectedInput) && i.getPackageName().equals(parentPackage));
+                    if (!named || !type.getModifiers().contains(JavaModifier.FINAL) || !implementsOwnInput) {
+                        events.add(SimpleConditionEvent.violated(type, type.getName()
+                                + " 必須是 final 的 …UseCase，並實作 " + parentPackage + " 的同名 …Input"));
+                    }
+                }
+            })
+            .as("CA-16／CA-4 impl 套件只放實作了自己 Input Boundary 的 final Use Case 類別");
 
     private static final String COMMAND_USE_CASES = "createboard|renameboard|archiveboard|addcolumn|renamecolumn"
             + "|movecolumn|setcolumnwiplimit|removecolumnwiplimit|removecolumn|addcard|changecardcontent|movecard"
@@ -229,4 +245,59 @@ public final class UseCaseRules {
                 }
             })
             .as("CA-10 Use Cases 圈的套件以 Use Case 的業務名稱命名");
+
+    private static final Pattern COMMAND_USE_CASE_PACKAGE = Pattern.compile(".*\\.usecases\\.commands\\.(?!gateway$|support$)\\w+");
+    private static final Pattern QUERY_USE_CASE_PACKAGE = Pattern.compile(".*\\.usecases\\.queries\\.\\w+");
+
+    /**
+     * CQRS-4、ES-1：Use Case 自己的套件裡只能放邊界介面與 Request／Response Model。
+     * 新的 Gateway 不能偷放在這裡——指令端的 Gateway 只能放在 commands.gateway（那裡另有允許清單）。
+     * 查詢端另外允許唯讀的 …Reader 與讀取模型的 record／enum。
+     */
+    public static final ArchRule USECASE_PACKAGES_HOLD_ONLY_BOUNDARY_TYPES = classes()
+            .that(useCaseType("直接放在某個 Use Case 的套件裡", type ->
+                    COMMAND_USE_CASE_PACKAGE.matcher(type.getPackageName()).matches()
+                            || QUERY_USE_CASE_PACKAGE.matcher(type.getPackageName()).matches()))
+            .should(new ArchCondition<>("是邊界介面或 Request／Response Model") {
+                @Override
+                public void check(JavaClass type, ConditionEvents events) {
+                    String name = type.getSimpleName();
+                    boolean command = COMMAND_USE_CASE_PACKAGE.matcher(type.getPackageName()).matches();
+                    boolean allowed = command
+                            ? (type.isInterface() && (name.endsWith("Input") || name.endsWith("Output")))
+                                    || (type.isRecord() && name.endsWith("Request"))
+                            : (type.isInterface()
+                                    && (name.endsWith("Input") || name.endsWith("Output") || name.endsWith("Reader")))
+                                    || type.isRecord() || type.isEnum();
+                    if (!allowed) {
+                        events.add(SimpleConditionEvent.violated(type, type.getName()
+                                + " 不是邊界介面或 Request／Response Model，不能放在 Use Case 的套件裡"));
+                    }
+                }
+            })
+            .as("CQRS-4／ES-1 Use Case 套件裡只放邊界介面與 Request／Response Model");
+
+    /**
+     * CQRS-4：指令 Use Case 只能使用寫入端的 Gateway（commands.gateway 套件）與自己的 Output Boundary。
+     * 欄位型別走允許清單，所以拿不到任何能讀取讀取模型的東西。
+     */
+    public static final ArchRule COMMAND_USECASES_USE_ONLY_WRITE_GATEWAYS = classes()
+            .that(useCaseType("是指令 Use Case 的實作",
+                    type -> Shapes.inPackage(type, "commands") && Shapes.inPackage(type, "impl")))
+            .should(new ArchCondition<>("欄位只有寫入端的 Gateway 與自己的 Output Boundary") {
+                @Override
+                public void check(JavaClass useCase, ConditionEvents events) {
+                    for (JavaField field : useCase.getAllFields()) {
+                        JavaClass fieldType = field.getRawType();
+                        boolean writeGateway = Shapes.inPackage(fieldType, "commands") && Shapes.inPackage(fieldType, "gateway");
+                        boolean ownOutput = fieldType.isInterface() && fieldType.getSimpleName().endsWith("Output")
+                                && Shapes.inPackage(fieldType, "commands");
+                        if (!writeGateway && !ownOutput) {
+                            events.add(SimpleConditionEvent.violated(field, field.getFullName() + " 的型別 "
+                                    + fieldType.getName() + " 不是寫入端的 Gateway，也不是 Output Boundary"));
+                        }
+                    }
+                }
+            })
+            .as("CQRS-4 指令 Use Case 只能使用寫入端的 Gateway 與自己的 Output Boundary");
 }

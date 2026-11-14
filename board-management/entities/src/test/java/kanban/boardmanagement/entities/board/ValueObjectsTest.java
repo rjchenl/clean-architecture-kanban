@@ -61,6 +61,29 @@ class ValueObjectsTest {
         assertThat(create.apply(" " + "字".repeat(100) + " ")).hasSize(100);
     }
 
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("names")
+    void 名稱不可含控制字元(String label, Function<String, String> create) {
+        // 例如 NUL 字元：資料庫存不進去，必須在這裡就拒絕，不能等到儲存時才變成系統錯誤
+        assertRejected(() -> create.apply("a\u0000b"), RejectionReason.INVALID_CHARACTERS);
+        assertRejected(() -> create.apply("第一行\n第二行"), RejectionReason.INVALID_CHARACTERS);
+        assertRejected(() -> create.apply("定位\t字元"), RejectionReason.INVALID_CHARACTERS);
+        assertRejected(() -> create.apply("a\u0085b"), RejectionReason.INVALID_CHARACTERS);
+    }
+
+    @Test
+    void 卡片說明可以換行與定位_但不可含其他控制字元() {
+        assertThat(new CardDescription("第一行\r\n\t第二行").value()).isEqualTo("第一行\r\n\t第二行");
+        assertRejected(() -> new CardDescription("a\u0000b"), RejectionReason.INVALID_CHARACTERS);
+        assertRejected(() -> new CardDescription("a\u0007b"), RejectionReason.INVALID_CHARACTERS);
+    }
+
+    @Test
+    void 識別碼不可含控制字元() {
+        assertRejected(() -> new BoardId("board\u0000"), RejectionReason.INVALID_CHARACTERS);
+        assertRejected(() -> new CardId("card\n1"), RejectionReason.INVALID_CHARACTERS);
+    }
+
     @Test
     void 卡片說明可以空白_null視為空字串() {
         assertThat(new CardDescription(null).value()).isEmpty();

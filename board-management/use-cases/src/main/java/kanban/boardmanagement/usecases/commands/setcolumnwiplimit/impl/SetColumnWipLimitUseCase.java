@@ -25,7 +25,7 @@ public final class SetColumnWipLimitUseCase implements SetColumnWipLimitInput {
     @Override
     public void execute(SetColumnWipLimitRequest request) {
         output.present(BoardCommand.onExistingBoard(boards,
-                () -> BoardCommand.required(request.boardId(), request.columnId()),
+                () -> BoardCommand.required(request.boardId(), request.columnId(), request.limit()),
                 board -> {
                     board.setColumnWipLimit(new ColumnId(request.columnId()), new WipLimit(request.limit()), time.now());
                     return null;

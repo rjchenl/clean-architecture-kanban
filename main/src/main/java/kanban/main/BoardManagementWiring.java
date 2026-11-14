@@ -101,9 +101,20 @@ class BoardManagementWiring {
                 new SystemTimeSource(), new UuidIdentityGenerator(), ZoneId.of(displayZone));
     }
 
-    /** 啟動時把讀取模型補到最新：上次沒補完的、或讀取模型被清空過，都在這裡補齊（ES-8）。 */
+    /**
+     * 啟動時把讀取模型補到最新：上次沒補完的、或讀取模型被清空過，都在這裡補齊（ES-8）。
+     * 補不上（例如事件紀錄裡有這一版不認得的事件）不讓應用程式起不來：事件紀錄完好、指令照常可用，
+     * 讀取模型停在出問題的那一筆之前，錯誤寫進日誌。
+     */
     @Bean
     ApplicationRunner startupCatchUp(BoardProjection projection) {
-        return arguments -> projection.catchUp();
+        return arguments -> {
+            try {
+                projection.catchUp();
+            } catch (RuntimeException failure) {
+                System.getLogger(BoardManagementWiring.class.getName()).log(System.Logger.Level.ERROR,
+                        "啟動時讀取模型沒有補到最新；畫面會看到舊資料，請依錯誤內容處理後重新啟動", failure);
+            }
+        };
     }
 }

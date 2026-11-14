@@ -72,6 +72,26 @@ describe('BoardView', () => {
     expect(wrapper.find('[data-testid="message"]').exists()).toBe(false)
   })
 
+  it('讀取看板時後端出錯：顯示系統錯誤訊息，而不是「找不到這個看板」', async () => {
+    vi.mocked(api.viewBoard).mockRejectedValue(new Error('service unavailable'))
+
+    const wrapper = await mountBoard()
+
+    expect(wrapper.get('[data-testid="message"]').text()).toBe('系統暫時無法處理，請稍後再試')
+    expect(wrapper.text()).not.toContain('找不到這個看板')
+  })
+
+  it('指令送出時後端出錯：顯示系統錯誤訊息，原本的看板還在畫面上', async () => {
+    vi.mocked(api.moveCard).mockRejectedValue(new Error('service unavailable'))
+    const wrapper = await mountBoard()
+
+    wrapper.findAllComponents(ColumnPanel)[1].vm.$emit('card-dropped', 'card-1', 'col-doing', 0)
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="message"]').text()).toBe('系統暫時無法處理，請稍後再試')
+    expect(wrapper.get('[data-testid="board-name"]').text()).toBe('產品開發')
+  })
+
   it('前端不自己擋操作：已封存的看板照樣送出指令，由後端回覆', async () => {
     vi.mocked(api.viewBoard).mockResolvedValue({ ...board, archived: true, archivedLabel: '已封存' })
     vi.mocked(api.addColumn).mockResolvedValue({ outcome: 'REJECTED', message: '看板已封存，不能再變更', createdId: '' })

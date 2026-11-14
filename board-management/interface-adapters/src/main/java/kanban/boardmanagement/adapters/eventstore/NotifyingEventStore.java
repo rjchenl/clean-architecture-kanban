@@ -31,7 +31,8 @@ public final class NotifyingEventStore implements EventStore {
         try {
             afterAppend.run();
         } catch (RuntimeException e) {
-            LOG.log(System.Logger.Level.WARNING, "事件已寫入，但寫入後的通知失敗；讀取模型會在下次補上", e);
+            LOG.log(System.Logger.Level.ERROR,
+                    "事件已寫入，但讀取模型沒有更新成功；畫面會看到舊資料，直到下一次補讀成功為止", e);
         }
     }
 }

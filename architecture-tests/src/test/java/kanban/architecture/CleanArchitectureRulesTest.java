@@ -59,6 +59,11 @@ class CleanArchitectureRulesTest {
     }
 
     @Test
+    void CA10_Adapters圈的套件在允許清單內() {
+        CleanArchitectureRules.ADAPTER_PACKAGES_ON_ALLOW_LIST.check(Imported.production());
+    }
+
+    @Test
     void CA10_最上層套件是業務情境() {
         CleanArchitectureRules.TOP_LEVEL_PACKAGES_SCREAM.check(Imported.production());
     }

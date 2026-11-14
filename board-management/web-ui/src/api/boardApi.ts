@@ -5,23 +5,35 @@ import type {
   CardHistoryViewModel,
   CommandViewModel,
 } from './viewModels'
+import { ServiceUnavailable } from './serviceUnavailable'
 
-async function send<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const response = await fetch(`/api/boards${path}`, {
-    method,
-    headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
-  return (await response.json()) as T
+// 只認回覆的「形狀」：有沒有這種 ViewModel 一定會有的欄位。不看內容、不做任何業務判斷。
+async function send<T>(method: string, path: string, body: unknown, viewModelField: string): Promise<T> {
+  let payload: unknown
+  try {
+    const response = await fetch(`/api/boards${path}`, {
+      method,
+      headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+    payload = await response.json()
+  } catch {
+    throw new ServiceUnavailable()
+  }
+  if (typeof payload !== 'object' || payload === null || !(viewModelField in payload)) {
+    throw new ServiceUnavailable()
+  }
+  return payload as T
 }
 
-const command = (method: string, path: string, body?: unknown) => send<CommandViewModel>(method, path, body)
+const command = (method: string, path: string, body?: unknown) =>
+  send<CommandViewModel>(method, path, body, 'outcome')
 
 // ---- 查詢
-export const listBoards = () => send<BoardListViewModel>('GET', '')
-export const viewBoard = (boardId: string) => send<BoardViewModel>('GET', `/${boardId}`)
+export const listBoards = () => send<BoardListViewModel>('GET', '', undefined, 'boards')
+export const viewBoard = (boardId: string) => send<BoardViewModel>('GET', `/${boardId}`, undefined, 'found')
 export const viewCardHistory = (boardId: string, cardId: string) =>
-  send<CardHistoryViewModel>('GET', `/${boardId}/cards/${cardId}/history`)
+  send<CardHistoryViewModel>('GET', `/${boardId}/cards/${cardId}/history`, undefined, 'found')
 
 // ---- 看板
 export const createBoard = (name: string) => command('POST', '', { name })

@@ -9,15 +9,15 @@
 | CA-1 | 四個圈模組的相依設定 | 編譯（Maven 模組）＋`CleanArchitectureRules.RINGS_DEPEND_INWARD`（`CleanArchitectureRulesTest`、`CleanArchitectureRulesBiteTest`） | 已驗證 |
 | CA-2 | `board-management/entities`（`module-info` 不 requires 任何模組） | 編譯＋Maven Enforcer `inner-ring-has-no-dependencies`＋`CleanArchitectureRules.ENTITIES_USE_ONLY_JDK` | 已驗證 |
 | CA-3 | `board-management/use-cases`（`module-info` 只 requires Entities） | 編譯＋Maven Enforcer＋`CleanArchitectureRules.USECASES_USE_ONLY_JDK_AND_ENTITIES`；14 支 `…UseCaseTest` 用 `FakeBoardRepository`，不啟動 Spring | 已驗證 |
-| CA-4 | 17 個 Use Case 套件的 `…Input`、`…Output` 與 `impl/…UseCase`；`adapters.controllers` 呼叫 Input、`adapters.presenters` 實作 Output | `UseCaseRules.EVERY_USECASE_HAS_BOTH_BOUNDARIES`、`AdapterRules.CONTROLLERS_USE_ONLY_INPUT_BOUNDARIES`＋`ControllersTest` | 已驗證 |
+| CA-4 | 17 個 Use Case 套件的 `…Input`、`…Output` 與 `impl/…UseCase`；`adapters.controllers` 呼叫 Input、`adapters.presenters` 實作 Output | `UseCaseRules.EVERY_USECASE_HAS_BOTH_BOUNDARIES`、`NO_UNNECESSARY_PUBLIC`（impl 套件裡的類別必須實作同名 Input）、`AdapterRules.CONTROLLERS_USE_ONLY_INPUT_BOUNDARIES`＋`ControllersTest` | 已驗證 |
 | CA-5 | `…Request`、`…Response`、`CommandResponse`、查詢端的讀取模型 record（解讀見設計文件 4.3） | `UseCaseRules.BOUNDARY_TYPES_ARE_SIMPLE` | 已驗證 |
 | CA-6 | 介面：`usecases.commands.gateway`、`usecases.eventfeed`、查詢端三個 `…Reader`；實作：`adapters.eventstore`、`adapters.projection`（記憶體版與 PostgreSQL 版） | 編譯＋`DddRules.REPOSITORY_INTERFACE_INSIDE_IMPL_OUTSIDE`＋契約測試各跑兩次：`EventStoreContract`（`InMemoryEventStoreTest`、`PostgresEventStoreTest`）、`ReadModelStoreContract`（`InMemoryReadModelStoreTest`、`PostgresReadModelStoreTest`） | 已驗證 |
-| CA-7 | Spring 只出現在 `frameworks-drivers` 與 `main`；內三圈無任何框架 | `CleanArchitectureRules.ADAPTERS_FREE_OF_FRAMEWORKS`、`SPRING_ANNOTATIONS_ONLY_IN_OUTER_RING`、`ENTITIES_USE_ONLY_JDK`、`USECASES_USE_ONLY_JDK_AND_ENTITIES`＋`FrameworkRules.ENDPOINTS_ONLY_DELEGATE`＋編譯（內兩圈零相依） | 已驗證 |
-| CA-8 | `main` 模組：`BoardManagementWiring`（建立所有實作）、`BoardManagementRequestAssembly`（每次請求接起 Controller、Use Case、Presenter） | `CleanArchitectureRules.ONLY_MAIN_KNOWS_IMPLEMENTATIONS`＋`module-info`（impl 套件不公開，Task 1 反向證明）＋`BoardHttpIntegrationTest` | 已驗證 |
+| CA-7 | Spring 只出現在 `frameworks-drivers` 與 `main`；第 3 圈只能用 JDK、Jackson 與內兩圈（允許清單） | `CleanArchitectureRules.ADAPTERS_FREE_OF_FRAMEWORKS`（允許清單）、`SPRING_ANNOTATIONS_ONLY_IN_OUTER_RING`、`ENTITIES_USE_ONLY_JDK`、`USECASES_USE_ONLY_JDK_AND_ENTITIES`＋`FrameworkRules.ENDPOINTS_ONLY_DELEGATE`＋`UseCaseRulesTest.CA7_Adapters模組宣告只requires允許的模組`＋編譯（內兩圈零相依） | 已驗證 |
+| CA-8 | `main` 模組：`BoardManagementWiring`（建立所有實作）、`BoardManagementRequestAssembly`（每次請求接起 Controller、Use Case、Presenter） | `CleanArchitectureRules.ONLY_MAIN_KNOWS_IMPLEMENTATIONS`（含建構子參考）＋`module-info`（impl 套件不公開，Task 1 反向證明）＋`BoardHttpIntegrationTest` | 已驗證 |
 | CA-9 | `adapters.presenters`（Presenter 與 ViewModel）；`board-management/web-ui`（Vue 畫面只顯示 ViewModel） | `CommandPresenterTest`、`BoardPresenterTest`、`BoardListPresenterTest`、`CardHistoryPresenterTest`＋`AdapterRules.VIEWMODELS_ARE_DISPLAY_READY`＋前端 `ColumnPanel.spec.ts`、`BoardView.spec.ts`＋ESLint 規則（畫面元件禁用日期／數字格式化 API）＋審查清單 R-01～R-03（2026-11-14）＋瀏覽器實測（2026-11-14） | 已驗證 |
-| CA-10 | 模組、最上層套件、Use Cases 圈套件命名 | `CleanArchitectureRules.TOP_LEVEL_PACKAGES_SCREAM`、`UseCaseRules.USECASE_PACKAGES_ON_ALLOW_LIST` | 已驗證 |
+| CA-10 | 模組、最上層套件、Use Cases 圈與 Interface Adapters 圈的套件命名 | `CleanArchitectureRules.TOP_LEVEL_PACKAGES_SCREAM`、`ADAPTER_PACKAGES_ON_ALLOW_LIST`、`UseCaseRules.USECASE_PACKAGES_ON_ALLOW_LIST` | 已驗證 |
 | CA-11 | 全部 | DIP：編譯＋`module-info`＋`CleanArchitectureRules.ONLY_MAIN_KNOWS_IMPLEMENTATIONS`、`AdapterRules.CONTROLLERS_USE_ONLY_INPUT_BOUNDARIES`；ISP：`UseCaseRules.INPUT_BOUNDARY_HAS_ONE_METHOD`、`CleanArchitectureRules.EVENT_ACCESS_IS_SEGREGATED`、`CqrsRules.ONLY_PROJECTION_WRITES_READ_MODEL`；OCP：`AdapterRules.ONE_PRESENTER_PER_OUTPUT`；SRP、OCP、LSP：審查清單 R-04～R-06（2026-11-14，R-05 發現一處不符合並已修正） | 已驗證 |
-| CA-12 | 模組與各圈套件相依圖 | 編譯（Maven 模組不允許循環）＋`NO_PACKAGE_CYCLES` | 已驗證 |
+| CA-12 | 模組相依圖（Maven 模組不允許循環） | 編譯（Maven reactor 遇到模組循環會直接失敗）。`CleanArchitectureRules.NO_PACKAGE_CYCLES` 只是在各圈之間重複檢查同一件事，對正式程式碼不可能失敗；圈內的套件循環目前沒有檢查 | 已驗證（由編譯守住；備註：ArchUnit 規則在這一條沒有提供額外保護） |
 | CA-13 | 模組與套件切分（每圈一個模組；Use Case 各自一個套件） | 審查清單 R-07（2026-11-14） | 已驗證 |
 | CA-14 | 設計文件 `docs/design/phase-one-board-management.md` 第 10 節「邊界清單」 | 設計文件＋本表 | 已驗證 |
 | CA-15 | 所有測試 | 審查清單 R-08（2026-11-14）＋`EntitiesRules.AGGREGATE_TESTS_USE_SCENARIO` | 已驗證 |
@@ -31,20 +31,20 @@
 | DDD-7 | 14 個領域事件 record，共同型別 `BoardEvent` | `EntitiesRules.EVENTS_NAMED_IN_PAST_TENSE`、`VALUE_OBJECTS_AND_EVENTS_ARE_RECORDS` | 已驗證 |
 | DDD-8 | `BoardRepository`（一個聚合一個）；實作 `EventSourcedBoardRepository` | `DddRules.REPOSITORY_INTERFACE_INSIDE_IMPL_OUTSIDE`＋`EventSourcedBoardRepositoryTest` | 已驗證 |
 | DDD-9 | 業務規則只在 `Board` 聚合與值物件；指令 Use Case 只協調（`commands.support.BoardCommand`） | 聚合測試涵蓋 R1～R12（見 DDD-4）＋審查清單 R-11（2026-11-14） | 已驗證 |
-| ES-1 | 資料表 `board_events` 是寫入端唯一的表；`EventSourcedBoardRepository` 只靠 `EventStore` | `EventSourcingRules.NO_STATE_TABLE_ABSTRACTION_ON_WRITE_SIDE`＋資料庫結構檢查 `WriteSideSchemaTest.寫入端只有事件表` | 已驗證 |
+| ES-1 | 資料表 `board_events` 是寫入端唯一的表；`EventSourcedBoardRepository` 只靠 `EventStore` | `EventSourcingRules.NO_STATE_TABLE_ABSTRACTION_ON_WRITE_SIDE`、`JDBC_ONLY_IN_POSTGRES_STORES`＋`CleanArchitectureRules.ADAPTER_PACKAGES_ON_ALLOW_LIST`＋資料庫結構檢查 `WriteSideSchemaTest.寫入端只有事件表` | 已驗證 |
 | ES-2 | `EventStore`、`EventFeed` 介面沒有更新與刪除；`board_events` 的唯讀觸發程序（`V1__event_store.sql`） | `EventStoreContract.介面沒有更新與刪除`＋`EventTableIsAppendOnlyTest`（修改、刪除、清空都被資料庫拒絕） | 已驗證 |
-| ES-3 | `Board`：指令方法只做檢查與產生事件；`apply`／`on…` 方法只改狀態 | `EntitiesRules.APPLY_METHODS_DO_NOT_REJECT`、`STATE_CHANGES_ONLY_IN_APPLY`＋聚合測試 | 已驗證 |
+| ES-3 | `Board`：指令方法只做檢查與產生事件；`apply`／`on…` 方法只改狀態 | `EntitiesRules.APPLY_METHODS_DO_NOT_REJECT`（含套用方法呼叫到的自家方法）、`STATE_CHANGES_ONLY_IN_APPLY`（含不得在指令方法修改集合內容）＋聚合測試 | 已驗證（備註：「套用方法不會失敗」只檢查不丟例外、不呼叫檢查方法；無法靜態證明所有執行路徑都不會失敗） |
 | ES-4 | `Board.rehydrate`；時間由指令方法的參數傳入 | `ReplayTest`（同一串事件重播兩次_後續指令的結果相同 等 7 支）＋`EntitiesRules.NO_CLOCK_OR_RANDOM_IN_ENTITIES` | 已驗證 |
 | ES-5 | `BoardScenario`（Given／When／Then） | `EntitiesRules.AGGREGATE_TESTS_USE_SCENARIO` | 已驗證 |
 | ES-6 | `EventStore.append` 的預期版本號；`board_events` 的 `(stream_id, stream_version)` 唯一鍵 | `EventStoreContract.預期版本不符_丟ConcurrentUpdateException且不寫入任何事件`（兩種實作）＋`PostgresEventStoreTest.十條執行緒同時對同一條串流寫入同一個預期版本_恰好一條成功`＋`InMemoryEventStoreTest` 同名測試 | 已驗證 |
-| ES-7 | `adapters.eventstore.BoardEventJson`（事件類型名稱、格式版本、upcaster）；樣本檔 `interface-adapters/src/test/resources/event-samples/` | `BoardEventJsonTest`（樣本檔都讀得回來、每種事件的每個版本都有樣本檔、CardAdded_v1_讀回來時說明是空字串） | 已驗證 |
+| ES-7 | `adapters.eventstore.BoardEventJson`（事件類型名稱、格式版本、upcaster）；樣本檔 `event-samples/`、`event-samples-limits/` | `BoardEventJsonTest`（樣本檔都讀得回來、每種事件的每個版本都有樣本檔、CardAdded_v1_讀回來時說明是空字串、落在現行驗證規則邊界上的舊事件都讀得回來）＋`PostgresProjectionTest.事件紀錄裡出現不認得的事件_前面的正常事件照樣投影_然後明確報錯停住` | 已驗證（備註：讀取舊事件時仍會經過值物件的驗證；收緊驗證規則前必須先寫 upcaster，邊界樣本測試會在那時失敗提醒） |
 | ES-8 | `BoardProjection.rebuild`、`ReadModelStore.reset` | `BoardProjectionTest.重建後與重建前完全相同`、`PostgresProjectionTest.重建後與重建前完全相同` | 已驗證 |
 | CQRS-1 | `usecases.commands`、`usecases.queries` 兩個套件 | `CqrsRules.COMMANDS_AND_QUERIES_SEPARATE`、`QUERIES_NEVER_TOUCH_WRITE_SIDE` | 已驗證 |
 | CQRS-2 | `CommandResponse`；查詢的 Response Model 來自讀取模型 | `UseCaseRules.COMMAND_RESPONSE_CARRIES_NO_VIEW_DATA`、`CqrsRules.QUERIES_NEVER_TOUCH_WRITE_SIDE`＋查詢測試 `ViewBoardUseCaseTest`、`ListBoardsUseCaseTest`、`ViewCardHistoryUseCaseTest` | 已驗證 |
 | CQRS-3 | 查詢 Use Case 只讀 `BoardSnapshotReader`、`BoardSummaryReader`、`CardHistoryReader` | `CqrsRules.QUERIES_NEVER_TOUCH_WRITE_SIDE` | 已驗證 |
-| CQRS-4 | 指令端只靠聚合自己的狀態做決定 | `CqrsRules.COMMANDS_NEVER_READ_READ_MODEL` | 已驗證 |
-| CQRS-5 | `adapters.projection.BoardProjection`（讀取模型唯一的寫入途徑） | `CqrsRules.ONLY_PROJECTION_WRITES_READ_MODEL`＋`BoardProjectionTest`（已處理過的事件再送一次_被略過_結果不變、catchUp連續呼叫兩次_結果不變） | 已驗證 |
-| CQRS-6 | 設計文件 7.5 節；`NotifyingEventStore`＋`BoardProjection.catchUp`＋啟動時補齊 | `ConsistencyIntegrationTest`（情況1、情況2、情況3 各一支）＋`StartupCatchUpIntegrationTest` | 已驗證 |
+| CQRS-4 | 指令端只靠聚合自己的狀態做決定 | `CqrsRules.COMMANDS_NEVER_READ_READ_MODEL`＋`UseCaseRules.USECASE_PACKAGES_HOLD_ONLY_BOUNDARY_TYPES`（Use Case 套件不能偷放 Gateway）、`COMMAND_USECASES_USE_ONLY_WRITE_GATEWAYS`（指令 Use Case 的欄位走允許清單） | 已驗證 |
+| CQRS-5 | `adapters.projection.BoardProjection`（讀取模型唯一的寫入途徑） | `CqrsRules.ONLY_PROJECTION_WRITES_READ_MODEL`（含直接使用具體實作的情況）＋`BoardProjectionTest`（已處理過的事件再送一次_被略過_結果不變、catchUp連續呼叫兩次_結果不變） | 已驗證 |
+| CQRS-6 | 設計文件 7.5 節；`NotifyingEventStore`＋`BoardProjection.catchUp`＋啟動時補齊 | `ConsistencyIntegrationTest`（情況1、情況2 經 HTTP；情況3 在 Repository 層重現版本衝突，HTTP 的 409 與訊息另由 `HttpStatusMappingTest`、`CommandPresenterTest` 分別證明，沒有單一測試從 HTTP 一路打到 409）＋`StartupCatchUpIntegrationTest`、`StartupCatchUpFailureTest` | 已驗證（備註：情況 3 的「畫面顯示訊息」是由三支測試拼起來證明的） |
 
 ## CI
 

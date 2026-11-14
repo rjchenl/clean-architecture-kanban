@@ -25,7 +25,7 @@ public final class MoveColumnUseCase implements MoveColumnInput {
     @Override
     public void execute(MoveColumnRequest request) {
         output.present(BoardCommand.onExistingBoard(boards,
-                () -> BoardCommand.required(request.boardId(), request.columnId()),
+                () -> BoardCommand.required(request.boardId(), request.columnId(), request.toPosition()),
                 board -> {
                     board.moveColumn(new ColumnId(request.columnId()), new Position(request.toPosition()), time.now());
                     return null;
