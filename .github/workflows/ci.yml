@@ -1,0 +1,36 @@
+# 每次推送都跑全部檢查；任何一條規則被違反就是紅燈（專案 CLAUDE.md 第 6 節第 6 點）。
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  backend:
+    name: 後端：編譯、架構測試、行為測試、整合測試
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      # 含 ArchUnit 架構測試，以及用 Testcontainers 啟動 PostgreSQL 的契約測試與整合測試
+      - run: ./mvnw -B verify
+
+  frontend:
+    name: 前端：lint、元件測試、型別檢查與打包
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: board-management/web-ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: board-management/web-ui/.nvmrc
+          cache: npm
+          cache-dependency-path: board-management/web-ui/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build

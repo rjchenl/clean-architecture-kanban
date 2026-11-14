@@ -45,3 +45,8 @@
 | CQRS-4 | 指令端只靠聚合自己的狀態做決定 | `CqrsRules.COMMANDS_NEVER_READ_READ_MODEL` | 已驗證 |
 | CQRS-5 | `adapters.projection.BoardProjection`（讀取模型唯一的寫入途徑） | `CqrsRules.ONLY_PROJECTION_WRITES_READ_MODEL`＋`BoardProjectionTest`（已處理過的事件再送一次_被略過_結果不變、catchUp連續呼叫兩次_結果不變） | 已驗證 |
 | CQRS-6 | 設計文件 7.5 節；`NotifyingEventStore`＋`BoardProjection.catchUp`＋啟動時補齊 | `ConsistencyIntegrationTest`（情況1、情況2、情況3 各一支）＋`StartupCatchUpIntegrationTest` | 已驗證 |
+
+## CI
+
+`.github/workflows/ci.yml` 每次推送都跑後端 `./mvnw -B verify`（含全部架構測試與接 PostgreSQL 的測試）與前端的 lint、測試、打包。
+**CI 設定已入庫，但還沒有在 GitHub 上實際執行過**——首次執行要等分支推送之後（推送需要使用者同意）。在那之前，「所有檢查都要在 CI 上每次推送自動執行」（專案規範第 6 節第 6 點）這一點只算設定完成、尚未驗證。
