@@ -9,3 +9,11 @@
 # 本機個人設定
 CLAUDE.local.md
 .claude/settings.local.json
+
+# 建置產物
+target/
+node_modules/
+dist/
+
+# 執行計畫時的暫存紀錄
+.superpowers/

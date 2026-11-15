@@ -1,0 +1,10 @@
+kanban:
+  # 儲存方式：postgres（預設）或 memory（不需要資料庫，重啟後資料消失）
+  storage: postgres
+  # 畫面上的時間用哪個時區顯示
+  display-zone: Asia/Taipei
+  datasource:
+    # 本機開發用的資料庫，對應專案根目錄的 compose.yaml；其他環境用環境變數覆蓋
+    url: ${KANBAN_DB_URL:jdbc:postgresql://localhost:5432/kanban}
+    username: ${KANBAN_DB_USERNAME:kanban}
+    password: ${KANBAN_DB_PASSWORD:kanban}
