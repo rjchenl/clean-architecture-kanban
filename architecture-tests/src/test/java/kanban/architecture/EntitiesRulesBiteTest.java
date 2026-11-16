@@ -107,4 +107,9 @@ class EntitiesRulesBiteTest {
     void DDD4_新增的內部實體宣告成public也會被擋下() {
         assertBites(EntitiesRules.AGGREGATE_INTERNALS_NOT_PUBLIC, "publiclane");
     }
+
+    @Test
+    void DDD4_內部物件的名稱出現在Entities圈以外而且是public也會被擋下() {
+        assertBites(EntitiesRules.AGGREGATE_INTERNALS_NOT_PUBLIC, "publiccardelsewhere");
+    }
 }

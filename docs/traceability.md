@@ -4,7 +4,7 @@
 
 規則名稱（全大寫）是 `architecture-tests` 模組 `kanban.architecture.rules` 套件內的常數；每條都有「對正式程式碼」的測試與「對違規樣本」的咬人測試。
 
-- 「對正式程式碼」讀入的是 `kanban` 底下全部的正式程式碼（`Imported.production()`），不列業務情境名稱：新增的業務情境不必改設定就會被每一條規則檢查到。
+- 「對正式程式碼」讀入的是 `kanban` 底下全部的正式程式碼（`Imported.production()`），不列業務情境名稱。新業務情境的模組只要在 `architecture-tests` 的 classpath 上（目前經由 `kanban-main` 的相依帶進來），每一條規則都會檢查到。新增業務情境時還要做兩件事：把它 entities 模組的 test-jar 加進 `architecture-tests/pom.xml`（ES-5 才讀得到它的聚合測試），並把它的 Given／When／Then 工具列進 `EntitiesRules` 的例外清單；`CleanArchitectureRules.TOP_LEVEL_PACKAGES_SCREAM` 的允許清單也要加上新情境（沒加會直接失敗，不會漏檢）。
 - 咬人測試（`Imported.assertBites`）必須看到規則回報「有違規」才算擋下；規則一個類別都沒選到（ArchUnit 的 failed to check any classes）不算。2026-11-16 加上這個條件後重跑，原有的咬人測試全部仍然成立。
 
 | 規則編號 | 落在哪個模組或類別 | 由哪一支測試或哪一項檢查守住 | 目前狀態 |

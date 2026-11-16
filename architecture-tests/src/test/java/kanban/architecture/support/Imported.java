@@ -23,7 +23,8 @@ public final class Imported {
     }
 
     /**
-     * 正式程式碼：kanban 底下全部，不列業務情境名稱——新增的業務情境不必改這裡就會被每一條規則檢查到。
+     * 正式程式碼：kanban 底下全部，不列業務情境名稱——新業務情境的模組只要在本模組的 classpath 上
+     * （目前經由 kanban-main 帶進來），不必改這裡就會被每一條規則檢查到。
      * entities 的 test-jar 也在 classpath 上（給 ES-5 規則用），正式程式碼的檢查要排除它。
      */
     private static final JavaClasses PRODUCTION = new ClassFileImporter()

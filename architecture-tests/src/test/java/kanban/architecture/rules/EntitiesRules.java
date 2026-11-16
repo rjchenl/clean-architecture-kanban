@@ -184,17 +184,19 @@ public final class EntitiesRules {
 
     /**
      * 聚合內部的實體，兩種認法任一成立就算：
-     * (1) 用語表標為「聚合內部物件」——不論寫成 class 或 record；
-     * (2) 形狀上不是可以公開的種類——不是可由事件重建的聚合根、record（值物件與事件）、列舉、介面或例外。
+     * (1) 名稱在用語表標為「聚合內部物件」——不論寫成 class 或 record、放在哪一圈
+     *     （原本的規則對 Card 也是不分圈都擋，這裡保留並擴及全部內部物件）；
+     * (2) 在 Entities 圈裡、形狀上不是可以公開的種類——不是可由事件重建的聚合根、record（值物件與事件）、列舉、介面或例外。
      */
     private static final DescribedPredicate<JavaClass> AGGREGATE_INTERNAL =
-            new DescribedPredicate<>("是聚合內部的實體（用語表標為聚合內部物件，或不是可以公開的種類）") {
+            new DescribedPredicate<>("是聚合內部的實體（用語表標為聚合內部物件，或在 Entities 圈裡不是可以公開的種類）") {
                 @Override
                 public boolean test(JavaClass type) {
                     boolean listedAsInternal = INTERNAL_OBJECT_NAMES.contains(type.getSimpleName());
+                    boolean inEntities = (type.getPackageName() + ".").contains(".entities.");
                     boolean mayBePublic = type.isRecord() || type.isEnum() || type.isInterface()
                             || type.isAssignableTo(Throwable.class) || REHYDRATABLE_ROOT.test(type);
-                    return listedAsInternal || !mayBePublic;
+                    return listedAsInternal || (inEntities && !mayBePublic);
                 }
             };
 
@@ -203,8 +205,7 @@ public final class EntitiesRules {
      * 沒列進用語表的新類別靠形狀認（而公開的新類別沒進用語表，GlossaryTest 會先失敗）。
      */
     public static final ArchRule AGGREGATE_INTERNALS_NOT_PUBLIC = classes()
-            .that().resideInAPackage("..entities..")
-            .and(AGGREGATE_INTERNAL)
+            .that(AGGREGATE_INTERNAL)
             .should().notBePublic()
             .as("DDD-4 聚合內部的實體不得是 public");
 
