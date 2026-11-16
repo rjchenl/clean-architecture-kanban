@@ -3,7 +3,9 @@ package kanban.architecture.rules;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
 import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaCodeUnitAccess;
 import com.tngtech.archunit.core.domain.JavaField;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.domain.JavaModifier;
@@ -150,19 +152,69 @@ public final class UseCaseRules {
             })
             .as("CA-5 跨越邊界的資料只能是簡單資料結構");
 
-    /** DDD-5：一個指令只修改一個聚合——指令 Use Case 只持有一個 Repository。 */
+    private static boolean isRepository(JavaClass type) {
+        return type.getSimpleName().endsWith("Repository");
+    }
+
+    /** 指令 Use Case 自己，加上寫在它裡面的巢狀、匿名類別——它們的程式也屬於這個指令。 */
+    private static Set<JavaClass> selfAndNested(JavaClass useCase) {
+        Set<JavaClass> found = new java.util.LinkedHashSet<>();
+        java.util.Deque<JavaClass> pending = new java.util.ArrayDeque<>(List.of(useCase));
+        while (!pending.isEmpty()) {
+            JavaClass current = pending.pop();
+            if (!found.add(current)) {
+                continue;
+            }
+            for (Dependency dependency : current.getDirectDependenciesFromSelf()) {
+                JavaClass target = dependency.getTargetClass();
+                if (target.getName().startsWith(useCase.getName() + "$")) {
+                    pending.add(target);
+                }
+            }
+        }
+        return found;
+    }
+
+    /**
+     * DDD-5：一個指令只修改一個聚合。三件事一起守：
+     * (1) 指令 Use Case 只持有一個 Repository；
+     * (2) 不自己呼叫 Repository 的方法——載入、存回一律交給共用流程（BoardCommand），它只載入一個、存回同一個；
+     * (3) 整個類別只把 Repository 交給別人一次，也就是只對一個聚合跑一次共用流程。
+     * 在迴圈裡跑共用流程這種寫法看不出次數，由 Use Case 測試的 FakeBoardRepository 在每個指令測試結束時檢查。
+     */
     public static final ArchRule ONE_AGGREGATE_PER_COMMAND = classes()
             .that(useCaseType("是指令 Use Case 的實作",
                     type -> Shapes.inPackage(type, "commands") && Shapes.inPackage(type, "impl")))
-            .should(new ArchCondition<>("恰好持有一個 Repository") {
+            .should(new ArchCondition<>("恰好持有一個 Repository、不自己呼叫它、只把它交給共用流程一次") {
                 @Override
                 public void check(JavaClass useCase, ConditionEvents events) {
                     long repositories = useCase.getAllFields().stream()
-                            .filter(f -> f.getRawType().getSimpleName().endsWith("Repository"))
+                            .filter(f -> isRepository(f.getRawType()))
                             .count();
                     if (repositories != 1) {
                         events.add(SimpleConditionEvent.violated(useCase,
                                 useCase.getName() + " 持有 " + repositories + " 個 Repository"));
+                    }
+                    int handOvers = 0;
+                    for (JavaClass part : selfAndNested(useCase)) {
+                        // 方法呼叫、建構子呼叫、方法參考（boards::save）都算
+                        List<JavaCodeUnitAccess<?>> accesses = new java.util.ArrayList<>();
+                        accesses.addAll(part.getMethodCallsFromSelf());
+                        accesses.addAll(part.getConstructorCallsFromSelf());
+                        accesses.addAll(part.getCodeUnitReferencesFromSelf());
+                        for (JavaCodeUnitAccess<?> access : accesses) {
+                            if (isRepository(access.getTargetOwner())) {
+                                events.add(SimpleConditionEvent.violated(access,
+                                        access.getDescription() + "：指令自己操作 Repository，要交給共用流程"));
+                            }
+                            if (access.getTarget().getRawParameterTypes().stream().anyMatch(UseCaseRules::isRepository)) {
+                                handOvers++;
+                            }
+                        }
+                    }
+                    if (handOvers != 1) {
+                        events.add(SimpleConditionEvent.violated(useCase,
+                                useCase.getName() + " 把 Repository 交給共用流程 " + handOvers + " 次，必須恰好一次"));
                     }
                 }
             })

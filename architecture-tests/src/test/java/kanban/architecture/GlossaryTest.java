@@ -15,6 +15,11 @@ class GlossaryTest {
     }
 
     @Test
+    void 用語表讀得到聚合內部物件_DDD4規則靠它() {
+        assertThat(Glossary.codeNamesOfKind("聚合內部物件")).containsExactlyInAnyOrder("Column", "Card");
+    }
+
+    @Test
     void 領域模型與指令的名稱都在用語表裡() {
         assertThat(Glossary.missing(Imported.production()))
                 .as("這些名稱還沒加進 docs/glossary.md（新名詞要先進用語表再寫程式）")

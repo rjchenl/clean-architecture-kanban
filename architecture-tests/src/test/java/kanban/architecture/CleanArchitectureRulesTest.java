@@ -49,6 +49,11 @@ class CleanArchitectureRulesTest {
     }
 
     @Test
+    void CA12_同一圈裡的套件之間沒有循環相依() {
+        CleanArchitectureRules.NO_CYCLES_BETWEEN_PACKAGES.check(Imported.production());
+    }
+
+    @Test
     void CA8_只有Main知道具體實作() {
         CleanArchitectureRules.ONLY_MAIN_KNOWS_IMPLEMENTATIONS.check(Imported.production());
     }

@@ -35,7 +35,17 @@ class CleanArchitectureRulesBiteTest {
 
     @Test
     void CA12_循環相依會被擋下() {
-        assertBites(CleanArchitectureRules.NO_PACKAGE_CYCLES, "cycles");
+        assertBites(CleanArchitectureRules.noCyclesBetweenRings("kanban.fixtures.cycles"), "cycles");
+    }
+
+    @Test
+    void CA12_同一圈裡兩個套件互相引用會被擋下() {
+        assertBites(CleanArchitectureRules.noCyclesBetweenPackages("kanban.fixtures.packagecycles"), "packagecycles");
+    }
+
+    @Test
+    void CA12_其他業務情境的兩圈之間繞成一圈會被擋下() {
+        assertBites(CleanArchitectureRules.noCyclesBetweenRings("kanban.fixtures.ringcycles"), "ringcycles");
     }
 
     @Test

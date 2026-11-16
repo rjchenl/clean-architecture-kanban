@@ -20,6 +20,7 @@ import kanban.boardmanagement.entities.board.ColumnWipLimitSet;
 import kanban.boardmanagement.entities.board.WipLimit;
 import kanban.boardmanagement.usecases.commands.gateway.IdentityGenerator;
 import kanban.boardmanagement.usecases.commands.gateway.TimeSource;
+import org.junit.jupiter.api.AfterEach;
 
 /**
  * 指令 Use Case 測試共用的場景。
@@ -46,9 +47,25 @@ public abstract class CommandFixture {
             return "id-" + next++;
         }
     };
-    protected final List<CommandResponse> responses = new ArrayList<>();
+    /**
+     * Use Case 的回覆（測試把 responses::add 當 Output Boundary）。每個指令恰好回覆一次，
+     * 所以收到回覆＝一個指令結束：在這裡自動檢查 DDD-5（這次指令最多只存了一個看板）。
+     */
+    protected final List<CommandResponse> responses = new ArrayList<>() {
+        @Override
+        public boolean add(CommandResponse response) {
+            boards.commandFinished();
+            return super.add(response);
+        }
+    };
 
     private int givenCount;
+
+    /** DDD-5：測試結束時再檢查一次——沒有回覆就中斷的指令（例如程式錯誤）也不能存了兩個看板。 */
+    @AfterEach
+    protected void 一個指令只修改一個看板() {
+        boards.assertAtMostOneBoardSaved();
+    }
 
     /** 準備標準看板，後面可以再接額外的事件。 */
     protected void givenStandardBoard(BoardEvent... more) {

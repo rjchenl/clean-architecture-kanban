@@ -22,12 +22,19 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
+import kanban.architecture.support.Glossary;
 import java.time.Clock;
+import java.time.InstantSource;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
+import java.util.random.RandomGenerator;
 
 /** Entities 圈（領域模型）的架構規則。規則編號對應專案 CLAUDE.md。 */
 public final class EntitiesRules {
@@ -46,16 +53,29 @@ public final class EntitiesRules {
             .should().beRecords()
             .as("DDD-6／DDD-7 值物件與領域事件必須是 record（不可變、以值比較）");
 
-    /** ES-4：領域模型不讀系統時間、不產生亂數；時間與識別碼由外部傳入。 */
+    /**
+     * ES-4：領域模型不讀系統時間、不產生亂數；時間與識別碼由外部傳入。
+     * 型別盡量用「可以指派給」來擋（子類別、實作類別一起擋）；這仍是一份禁止清單，JDK 新增的時間或亂數來源要補進來。
+     */
     public static final ArchRule NO_CLOCK_OR_RANDOM_IN_ENTITIES = noClasses()
             .that().resideInAPackage("..entities..")
             .should().dependOnClassesThat().belongToAnyOf(Clock.class, Random.class)
+            // 時間來源：Clock 與它的上層介面 InstantSource，以及舊的 Date、Calendar（含子類別）
+            .orShould().dependOnClassesThat().areAssignableTo(InstantSource.class)
+            .orShould().dependOnClassesThat().areAssignableTo(Date.class)
+            .orShould().dependOnClassesThat().areAssignableTo(Calendar.class)
+            // 亂數來源：Random、SecureRandom、SplittableRandom、ThreadLocalRandom 都實作 RandomGenerator
+            .orShould().dependOnClassesThat().areAssignableTo(RandomGenerator.class)
             .orShould().dependOnClassesThat().resideInAPackage("java.util.concurrent..")
+            .orShould().dependOnClassesThat().resideInAPackage("java.security..")
             .orShould().callMethodWhere(target(name("now")).and(target(owner(resideInAPackage("java.time..")))))
             .orShould().callMethod(System.class, "currentTimeMillis")
             .orShould().callMethod(System.class, "nanoTime")
             .orShould().callMethod(UUID.class, "randomUUID")
             .orShould().callMethod(Math.class, "random")
+            .orShould().callMethod(StrictMath.class, "random")
+            // 只給清單的 shuffle 會在 JDK 裡自己產生亂數，程式裡看不到 Random
+            .orShould().callMethod(Collections.class, "shuffle", List.class)
             .as("ES-4 Entities 圈不得讀取系統時間或產生亂數");
 
     // ------------------------------------------------------------------ 辨認用的述詞
@@ -71,6 +91,31 @@ public final class EntitiesRules {
                     && !type.isAssignableTo(Throwable.class);
         }
     };
+
+    /** 能由事件重建的聚合根：有 public static rehydrate 方法、回傳自己（事件溯源的聚合根都有）。 */
+    private static final DescribedPredicate<JavaClass> REHYDRATABLE_ROOT = new DescribedPredicate<>("是可由事件重建的聚合根") {
+        @Override
+        public boolean test(JavaClass type) {
+            return type.getMethods().stream().anyMatch(method -> method.getName().equals("rehydrate")
+                    && method.getModifiers().contains(JavaModifier.PUBLIC)
+                    && method.getModifiers().contains(JavaModifier.STATIC)
+                    && method.getRawReturnType().equals(type));
+        }
+    };
+
+    /** 可以直接重播事件、讀未提交事件的測試程式：Given／When／Then 工具本身，與重播測試（ES-4 要直接驗重播）。 */
+    private static final Set<String> SCENARIO_TOOLS_AND_REPLAY_TESTS = Set.of(
+            "kanban.boardmanagement.entities.board.BoardScenario",
+            "kanban.boardmanagement.entities.board.ReplayTest");
+
+    private static final DescribedPredicate<JavaClass> SCENARIO_TOOL_OR_REPLAY_TEST =
+            new DescribedPredicate<>("是 Given／When／Then 工具或重播測試（含其巢狀類別）") {
+                @Override
+                public boolean test(JavaClass type) {
+                    String topLevelName = type.getName().split("\\$", 2)[0];
+                    return SCENARIO_TOOLS_AND_REPLAY_TESTS.contains(topLevelName);
+                }
+            };
 
     /** 領域事件：實作了名稱以 Event 結尾的介面。 */
     private static final DescribedPredicate<JavaClass> DOMAIN_EVENT = new DescribedPredicate<>("是領域事件") {
@@ -134,10 +179,32 @@ public final class EntitiesRules {
             })
             .as("DDD-4 聚合沒有公開 setter，也不外露內部物件");
 
-    /** DDD-4、CA-16：聚合內部的實體（欄位、卡片）不是 public。 */
+    /** 用語表「種類」欄標為「聚合內部物件」的名稱（DDD-1：公開的領域型別一定要先進用語表）。 */
+    private static final Set<String> INTERNAL_OBJECT_NAMES = Glossary.codeNamesOfKind("聚合內部物件");
+
+    /**
+     * 聚合內部的實體，兩種認法任一成立就算：
+     * (1) 用語表標為「聚合內部物件」——不論寫成 class 或 record；
+     * (2) 形狀上不是可以公開的種類——不是可由事件重建的聚合根、record（值物件與事件）、列舉、介面或例外。
+     */
+    private static final DescribedPredicate<JavaClass> AGGREGATE_INTERNAL =
+            new DescribedPredicate<>("是聚合內部的實體（用語表標為聚合內部物件，或不是可以公開的種類）") {
+                @Override
+                public boolean test(JavaClass type) {
+                    boolean listedAsInternal = INTERNAL_OBJECT_NAMES.contains(type.getSimpleName());
+                    boolean mayBePublic = type.isRecord() || type.isEnum() || type.isInterface()
+                            || type.isAssignableTo(Throwable.class) || REHYDRATABLE_ROOT.test(type);
+                    return listedAsInternal || !mayBePublic;
+                }
+            };
+
+    /**
+     * DDD-4、CA-16：聚合內部的實體不是 public。不在規則裡寫類別名稱：名單來自用語表，
+     * 沒列進用語表的新類別靠形狀認（而公開的新類別沒進用語表，GlossaryTest 會先失敗）。
+     */
     public static final ArchRule AGGREGATE_INTERNALS_NOT_PUBLIC = classes()
             .that().resideInAPackage("..entities..")
-            .and().haveSimpleName("Column").or().haveSimpleName("Card")
+            .and(AGGREGATE_INTERNAL)
             .should().notBePublic()
             .as("DDD-4 聚合內部的實體不得是 public");
 
@@ -241,9 +308,12 @@ public final class EntitiesRules {
             .should().notDependOnEachOther()
             .as("DDD-5 聚合之間只能用識別碼互相參照");
 
-    /** ES-5：聚合測試只能透過 BoardScenario（Given／When／Then）操作聚合。 */
+    /**
+     * ES-5：聚合測試只能透過 BoardScenario（Given／When／Then）操作聚合。
+     * 對象是 Entities 圈的全部測試程式（見 Imported.entitiesTests，不看檔名），只有明列的工具與重播測試例外。
+     */
     public static final ArchRule AGGREGATE_TESTS_USE_SCENARIO = noClasses()
-            .that().haveSimpleNameEndingWith("RulesTest").or().haveSimpleNameEndingWith("LifecycleTest")
+            .that(DescribedPredicate.not(SCENARIO_TOOL_OR_REPLAY_TEST))
             .should().callMethodWhere(new DescribedPredicate<JavaMethodCall>("直接重播事件或讀未提交事件") {
                 @Override
                 public boolean test(JavaMethodCall call) {
