@@ -67,4 +67,49 @@ class EntitiesRulesBiteTest {
     void ES4_產生亂數識別碼會被擋下() {
         assertBites(EntitiesRules.NO_CLOCK_OR_RANDOM_IN_ENTITIES, "randomid");
     }
+
+    @Test
+    void ES4_用new_Date讀系統時間會被擋下() {
+        assertBites(EntitiesRules.NO_CLOCK_OR_RANDOM_IN_ENTITIES, "olddate");
+    }
+
+    @Test
+    void ES4_用Calendar讀系統時間會被擋下() {
+        assertBites(EntitiesRules.NO_CLOCK_OR_RANDOM_IN_ENTITIES, "calendar");
+    }
+
+    @Test
+    void ES4_用InstantSource讀系統時間會被擋下() {
+        assertBites(EntitiesRules.NO_CLOCK_OR_RANDOM_IN_ENTITIES, "instantsource");
+    }
+
+    @Test
+    void ES4_用SecureRandom產生亂數會被擋下() {
+        assertBites(EntitiesRules.NO_CLOCK_OR_RANDOM_IN_ENTITIES, "securerandom");
+    }
+
+    @Test
+    void ES4_用StrictMath_random產生亂數會被擋下() {
+        assertBites(EntitiesRules.NO_CLOCK_OR_RANDOM_IN_ENTITIES, "strictmathrandom");
+    }
+
+    @Test
+    void ES4_用Collections_shuffle打亂順序會被擋下() {
+        assertBites(EntitiesRules.NO_CLOCK_OR_RANDOM_IN_ENTITIES, "shuffle");
+    }
+
+    @Test
+    void ES5_檔名不是RulesTest的聚合測試直接重播事件也會被擋下() {
+        assertBites(EntitiesRules.AGGREGATE_TESTS_USE_SCENARIO, "scenarioanyname");
+    }
+
+    @Test
+    void DDD4_新增的內部實體宣告成public也會被擋下() {
+        assertBites(EntitiesRules.AGGREGATE_INTERNALS_NOT_PUBLIC, "publiclane");
+    }
+
+    @Test
+    void DDD4_內部物件的名稱出現在Entities圈以外而且是public也會被擋下() {
+        assertBites(EntitiesRules.AGGREGATE_INTERNALS_NOT_PUBLIC, "publiccardelsewhere");
+    }
 }

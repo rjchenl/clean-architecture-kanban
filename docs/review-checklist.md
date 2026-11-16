@@ -54,6 +54,7 @@
 - 對 CA-9、CA-11、CA-13、CA-15、DDD-9 這幾項靠審查清單守的規則，獨立審查沒有發現不符合。
 - **沒有處理、留待決定的事**（審查者列為次要）：`NO_PACKAGE_CYCLES` 沒有檢查圈內套件循環；`NO_CLOCK_OR_RANDOM_IN_ENTITIES` 擋不到 `new Date()` 與 `SecureRandom`；`AGGREGATE_TESTS_USE_SCENARIO` 只認特定檔名；`ONE_AGGREGATE_PER_COMMAND` 只數 Repository 欄位；`AGGREGATE_INTERNALS_NOT_PUBLIC` 寫死兩個類別名稱；由多個字元組成的表情符號（家庭、國旗）會算成多個字；修改卡片內容時沒帶說明會把說明清空；連續快速操作兩次可能自己撞到版本衝突；請求的 Content-Type 不對時回的是英文訊息；CI 對 PR 會跑兩次。
 - **Projection 長期停擺時沒有對外的訊號**：只有錯誤日誌，沒有健康檢查端點（超出第一階段範圍）。
+- 後續（2026-11-16）：上面留待決定的事已逐條開成 issue #2～#12。其中前五項架構檢查（#2～#6）已補強，每一種繞過寫法各有違規樣本，見 `docs/traceability.md` 的 CA-12、ES-4、ES-5、DDD-4、DDD-5 列；其餘各項仍是開著的 issue。
 
 ### 2026-11-14 修正後的瀏覽器複測
 

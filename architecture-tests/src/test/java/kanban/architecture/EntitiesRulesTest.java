@@ -1,11 +1,21 @@
 package kanban.architecture;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import kanban.architecture.rules.EntitiesRules;
 import kanban.architecture.support.Imported;
 import org.junit.jupiter.api.Test;
 
 /** 對正式程式碼跑 Entities 圈規則。 */
 class EntitiesRulesTest {
+
+    @Test
+    void ES5_檢查對象是Entities圈的全部測試程式_不看檔名也不含正式程式碼() {
+        assertThat(Imported.entitiesTests().contain("kanban.boardmanagement.entities.board.BoardScenario"))
+                .as("檔名不以 Test 結尾的測試程式也要檢查").isTrue();
+        assertThat(Imported.entitiesTests().contain("kanban.boardmanagement.entities.board.Board"))
+                .as("正式程式碼不屬於聚合測試").isFalse();
+    }
 
     @Test
     void DDD6_DDD7_值物件與事件是record() {

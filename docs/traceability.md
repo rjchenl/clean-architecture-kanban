@@ -4,6 +4,9 @@
 
 規則名稱（全大寫）是 `architecture-tests` 模組 `kanban.architecture.rules` 套件內的常數；每條都有「對正式程式碼」的測試與「對違規樣本」的咬人測試。
 
+- 「對正式程式碼」讀入的是 `kanban` 底下全部的正式程式碼（`Imported.production()`），不列業務情境名稱。新業務情境的模組只要在 `architecture-tests` 的 classpath 上（目前經由 `kanban-main` 的相依帶進來），每一條規則都會檢查到。新增業務情境時還要做兩件事：把它 entities 模組的 test-jar 加進 `architecture-tests/pom.xml`（ES-5 才讀得到它的聚合測試），並把它的 Given／When／Then 工具列進 `EntitiesRules` 的例外清單；`CleanArchitectureRules.TOP_LEVEL_PACKAGES_SCREAM` 的允許清單也要加上新情境（沒加會直接失敗，不會漏檢）。
+- 咬人測試（`Imported.assertBites`）必須看到規則回報「有違規」才算擋下；規則一個類別都沒選到（ArchUnit 的 failed to check any classes）不算。2026-11-16 加上這個條件後重跑，原有的咬人測試全部仍然成立。
+
 | 規則編號 | 落在哪個模組或類別 | 由哪一支測試或哪一項檢查守住 | 目前狀態 |
 |---|---|---|---|
 | CA-1 | 四個圈模組的相依設定 | 編譯（Maven 模組）＋`CleanArchitectureRules.RINGS_DEPEND_INWARD`（`CleanArchitectureRulesTest`、`CleanArchitectureRulesBiteTest`） | 已驗證 |
@@ -17,7 +20,7 @@
 | CA-9 | `adapters.presenters`（Presenter 與 ViewModel）；`board-management/web-ui`（Vue 畫面只顯示 ViewModel） | `CommandPresenterTest`、`BoardPresenterTest`、`BoardListPresenterTest`、`CardHistoryPresenterTest`＋`AdapterRules.VIEWMODELS_ARE_DISPLAY_READY`＋前端 `ColumnPanel.spec.ts`、`BoardView.spec.ts`＋ESLint 規則（畫面元件禁用日期／數字格式化 API）＋審查清單 R-01～R-03（2026-11-14）＋瀏覽器實測（2026-11-14） | 已驗證 |
 | CA-10 | 模組、最上層套件、Use Cases 圈與 Interface Adapters 圈的套件命名 | `CleanArchitectureRules.TOP_LEVEL_PACKAGES_SCREAM`、`ADAPTER_PACKAGES_ON_ALLOW_LIST`、`UseCaseRules.USECASE_PACKAGES_ON_ALLOW_LIST` | 已驗證 |
 | CA-11 | 全部 | DIP：編譯＋`module-info`＋`CleanArchitectureRules.ONLY_MAIN_KNOWS_IMPLEMENTATIONS`、`AdapterRules.CONTROLLERS_USE_ONLY_INPUT_BOUNDARIES`；ISP：`UseCaseRules.INPUT_BOUNDARY_HAS_ONE_METHOD`、`CleanArchitectureRules.EVENT_ACCESS_IS_SEGREGATED`、`CqrsRules.ONLY_PROJECTION_WRITES_READ_MODEL`；OCP：`AdapterRules.ONE_PRESENTER_PER_OUTPUT`；SRP、OCP、LSP：審查清單 R-04～R-06（2026-11-14，R-05 發現一處不符合並已修正） | 已驗證 |
-| CA-12 | 模組相依圖（Maven 模組不允許循環） | 編譯（Maven reactor 遇到模組循環會直接失敗）。`CleanArchitectureRules.NO_PACKAGE_CYCLES` 只是在各圈之間重複檢查同一件事，對正式程式碼不可能失敗；圈內的套件循環目前沒有檢查 | 已驗證（由編譯守住；備註：ArchUnit 規則在這一條沒有提供額外保護） |
+| CA-12 | 模組相依圖（Maven 模組不允許循環）；每一圈裡的套件 | 圈與圈之間：編譯（Maven reactor 遇到模組循環會直接失敗）＋`CleanArchitectureRules.NO_PACKAGE_CYCLES`（以「業務情境.圈」為一塊，不列情境名稱，第二個業務情境也會被檢查）。圈內的套件之間：`NO_CYCLES_BETWEEN_PACKAGES`（每個套件各算一塊；違規樣本 `packagecycles`：同一圈裡兩個指令套件互相引用） | 已驗證（2026-11-16 補上圈內套件循環的檢查，#2） |
 | CA-13 | 模組與套件切分（每圈一個模組；Use Case 各自一個套件） | 審查清單 R-07（2026-11-14） | 已驗證 |
 | CA-14 | 設計文件 `docs/design/phase-one-board-management.md` 第 10 節「邊界清單」 | 設計文件＋本表 | 已驗證 |
 | CA-15 | 所有測試 | 審查清單 R-08（2026-11-14）＋`EntitiesRules.AGGREGATE_TESTS_USE_SCENARIO` | 已驗證 |
@@ -25,8 +28,8 @@
 | DDD-1 | `docs/glossary.md` | `GlossaryTest`＋審查清單 R-09（2026-11-14） | 已驗證 |
 | DDD-2 | `kanban.<情境>` 套件 | `DddRules.CONTEXTS_DO_NOT_SHARE_DOMAIN`（`DddRulesTest`、`DddRulesBiteTest`） | 已驗證（備註：目前只有一個業務情境，規則還沒被真實的第二個情境考驗過） |
 | DDD-3 | — | — | 尚未實作（第二階段） |
-| DDD-4 | `Board` 聚合（`Column`、`Card` 是非公開的內部 record） | `EntitiesRules.AGGREGATE_HAS_NO_SETTERS`、`AGGREGATE_INTERNALS_NOT_PUBLIC`＋聚合測試：R1、R5 `CardRulesTest`（欄內有卡片不能刪欄、上限設得比現有張數低）；R2、R3、R10 `CardRulesTest`；R4、R7、R9、R11、R12 `ColumnRulesTest`、`CardRulesTest`；R6 `ValueObjectsTest`；R8 `BoardLifecycleTest`、`CardRulesTest`（已封存的看板拒絕所有變更） | 已驗證 |
-| DDD-5 | `Board` 聚合；每個指令 Use Case 只持有 `BoardRepository` | `EntitiesRules.AGGREGATE_REFERENCES_BY_ID`、`UseCaseRules.ONE_AGGREGATE_PER_COMMAND`＋審查清單 R-10（2026-11-14） | 已驗證（備註：只有一個聚合，「聚合之間只用識別碼互相參照」那一半還沒有真實案例，規則僅由違規樣本證明會擋） |
+| DDD-4 | `Board` 聚合（`Column`、`Card` 是非公開的內部 record） | `EntitiesRules.AGGREGATE_HAS_NO_SETTERS`、`AGGREGATE_INTERNALS_NOT_PUBLIC`（規則裡不寫類別名稱：用語表「種類」標為「聚合內部物件」的型別，以及不是聚合根、record、列舉、介面、例外的類別，都不得 public；公開的新型別沒進用語表時 `GlossaryTest` 會先失敗。剩下的缺口：把內部實體在用語表標成「值物件」，由審查清單 R-09 守）＋聚合測試：R1、R5 `CardRulesTest`（欄內有卡片不能刪欄、上限設得比現有張數低）；R2、R3、R10 `CardRulesTest`；R4、R7、R9、R11、R12 `ColumnRulesTest`、`CardRulesTest`；R6 `ValueObjectsTest`；R8 `BoardLifecycleTest`、`CardRulesTest`（已封存的看板拒絕所有變更） | 已驗證 |
+| DDD-5 | `Board` 聚合；每個指令 Use Case 只持有 `BoardRepository`，載入與存回一律交給 `commands.support.BoardCommand` | `EntitiesRules.AGGREGATE_REFERENCES_BY_ID`、`UseCaseRules.ONE_AGGREGATE_PER_COMMAND`（只持有一個 Repository、不自己呼叫它、整個類別只把它交給共用流程一次）＋行為檢查：`FakeBoardRepository.assertAtMostOneBoardSaved`，指令測試的共用場景 `CommandFixture` 在每個指令回覆時與測試結束時自動執行（咬人測試 `OneBoardPerCommandCheckTest`）＋審查清單 R-10（2026-11-14） | 已驗證（備註：只有一個聚合，「聚合之間只用識別碼互相參照」那一半還沒有真實案例，規則僅由違規樣本證明會擋） |
 | DDD-6 | 9 個值物件：`BoardId`、`ColumnId`、`CardId`、`BoardName`、`ColumnName`、`CardTitle`、`CardDescription`、`WipLimit`、`Position` | `ValueObjectsTest`＋`EntitiesRules.VALUE_OBJECTS_AND_EVENTS_ARE_RECORDS` | 已驗證 |
 | DDD-7 | 14 個領域事件 record，共同型別 `BoardEvent` | `EntitiesRules.EVENTS_NAMED_IN_PAST_TENSE`、`VALUE_OBJECTS_AND_EVENTS_ARE_RECORDS` | 已驗證 |
 | DDD-8 | `BoardRepository`（一個聚合一個）；實作 `EventSourcedBoardRepository` | `DddRules.REPOSITORY_INTERFACE_INSIDE_IMPL_OUTSIDE`＋`EventSourcedBoardRepositoryTest` | 已驗證 |
@@ -34,8 +37,8 @@
 | ES-1 | 資料表 `board_events` 是寫入端唯一的表；`EventSourcedBoardRepository` 只靠 `EventStore` | `EventSourcingRules.NO_STATE_TABLE_ABSTRACTION_ON_WRITE_SIDE`、`JDBC_ONLY_IN_POSTGRES_STORES`＋`CleanArchitectureRules.ADAPTER_PACKAGES_ON_ALLOW_LIST`＋資料庫結構檢查 `WriteSideSchemaTest.寫入端只有事件表` | 已驗證 |
 | ES-2 | `EventStore`、`EventFeed` 介面沒有更新與刪除；`board_events` 的唯讀觸發程序（`V1__event_store.sql`） | `EventStoreContract.介面沒有更新與刪除`＋`EventTableIsAppendOnlyTest`（修改、刪除、清空都被資料庫拒絕） | 已驗證 |
 | ES-3 | `Board`：指令方法只做檢查與產生事件；`apply`／`on…` 方法只改狀態 | `EntitiesRules.APPLY_METHODS_DO_NOT_REJECT`（含套用方法呼叫到的自家方法）、`STATE_CHANGES_ONLY_IN_APPLY`（含不得在指令方法修改集合內容）＋聚合測試 | 已驗證（備註：「套用方法不會失敗」只檢查不丟例外、不呼叫檢查方法；無法靜態證明所有執行路徑都不會失敗） |
-| ES-4 | `Board.rehydrate`；時間由指令方法的參數傳入 | `ReplayTest`（同一串事件重播兩次_後續指令的結果相同 等 7 支）＋`EntitiesRules.NO_CLOCK_OR_RANDOM_IN_ENTITIES` | 已驗證 |
-| ES-5 | `BoardScenario`（Given／When／Then） | `EntitiesRules.AGGREGATE_TESTS_USE_SCENARIO` | 已驗證 |
+| ES-4 | `Board.rehydrate`；時間由指令方法的參數傳入 | `ReplayTest`（同一串事件重播兩次_後續指令的結果相同 等 7 支）＋`EntitiesRules.NO_CLOCK_OR_RANDOM_IN_ENTITIES`（以「可以指派給」擋型別：`InstantSource`／`Clock`、`Date`、`Calendar`、所有 `RandomGenerator`（含 `SecureRandom`），以及 `java.util.concurrent`、`java.security`、`now()`、`StrictMath.random`、`Collections.shuffle` 等；每種寫法各一個違規樣本） | 已驗證（備註：仍是一份禁止清單，JDK 新增的時間或亂數來源要補進規則） |
+| ES-5 | `BoardScenario`（Given／When／Then） | `EntitiesRules.AGGREGATE_TESTS_USE_SCENARIO`：對象是 Entities 圈的全部測試程式（`Imported.entitiesTests()` 依位置與套件挑選，不看檔名；`EntitiesRulesTest.ES5_檢查對象是Entities圈的全部測試程式_不看檔名也不含正式程式碼`），只有 `BoardScenario` 與 `ReplayTest` 明列例外 | 已驗證（2026-11-16 起不再只認 `…RulesTest`／`…LifecycleTest` 檔名，#4） |
 | ES-6 | `EventStore.append` 的預期版本號；`board_events` 的 `(stream_id, stream_version)` 唯一鍵 | `EventStoreContract.預期版本不符_丟ConcurrentUpdateException且不寫入任何事件`（兩種實作）＋`PostgresEventStoreTest.十條執行緒同時對同一條串流寫入同一個預期版本_恰好一條成功`＋`InMemoryEventStoreTest` 同名測試 | 已驗證 |
 | ES-7 | `adapters.eventstore.BoardEventJson`（事件類型名稱、格式版本、upcaster）；樣本檔 `event-samples/`、`event-samples-limits/` | `BoardEventJsonTest`（樣本檔都讀得回來、每種事件的每個版本都有樣本檔、CardAdded_v1_讀回來時說明是空字串、落在現行驗證規則邊界上的舊事件都讀得回來）＋`PostgresProjectionTest.事件紀錄裡出現不認得的事件_前面的正常事件照樣投影_然後明確報錯停住` | 已驗證（備註：讀取舊事件時仍會經過值物件的驗證；收緊驗證規則前必須先寫 upcaster，邊界樣本測試會在那時失敗提醒） |
 | ES-8 | `BoardProjection.rebuild`、`ReadModelStore.reset` | `BoardProjectionTest.重建後與重建前完全相同`、`PostgresProjectionTest.重建後與重建前完全相同` | 已驗證 |

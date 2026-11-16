@@ -63,11 +63,31 @@ public final class CleanArchitectureRules {
             .should().dependOnClassesThat().resideInAPackage("org.springframework..")
             .as("CA-7 內三圈不得出現 Spring 的任何型別與註解");
 
-    /** CA-12：各圈之間、各業務情境之間的相依圖沒有循環。 */
-    public static final ArchRule NO_PACKAGE_CYCLES = slices()
-            .matching("..boardmanagement.(*)..")
-            .should().beFreeOfCycles()
-            .as("CA-12 元件相依圖不得有循環");
+    /**
+     * CA-12：各圈之間、各業務情境之間的相依圖沒有循環——以「業務情境.圈」為一塊，不列情境名稱。
+     * 正式程式碼用 {@link #NO_PACKAGE_CYCLES}。
+     */
+    public static ArchRule noCyclesBetweenRings(String root) {
+        return slices()
+                .matching(root + ".(*).(*)..")
+                .should().beFreeOfCycles()
+                .as("CA-12 元件相依圖不得有循環");
+    }
+
+    public static final ArchRule NO_PACKAGE_CYCLES = noCyclesBetweenRings("kanban");
+
+    /**
+     * CA-12：同一圈裡的套件之間也沒有循環——每個套件各算一塊（例如兩個指令套件互相引用）。
+     * 正式程式碼用 {@link #NO_CYCLES_BETWEEN_PACKAGES}。
+     */
+    public static ArchRule noCyclesBetweenPackages(String root) {
+        return slices()
+                .matching(root + ".(**)")
+                .should().beFreeOfCycles()
+                .as("CA-12 同一圈裡的套件之間不得有循環");
+    }
+
+    public static final ArchRule NO_CYCLES_BETWEEN_PACKAGES = noCyclesBetweenPackages("kanban");
 
     /** CA-10：最上層是業務情境，其下才分四圈。正式程式碼用 {@link #TOP_LEVEL_PACKAGES_SCREAM}。 */
     public static ArchRule topLevelPackagesScream(String root) {

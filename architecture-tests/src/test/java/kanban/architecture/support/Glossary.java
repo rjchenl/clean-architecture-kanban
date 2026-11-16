@@ -21,12 +21,24 @@ public final class Glossary {
 
     /** 用語表「程式名稱」欄的全部名稱。 */
     public static Set<String> codeNames() {
+        return codeNamesWhereKind(kind -> true);
+    }
+
+    /** 「種類」欄恰好是 kind 的那幾列的程式名稱（例如「聚合內部物件」）。 */
+    public static Set<String> codeNamesOfKind(String kind) {
+        return codeNamesWhereKind(kind::equals);
+    }
+
+    private static Set<String> codeNamesWhereKind(java.util.function.Predicate<String> kindMatches) {
         Set<String> names = new LinkedHashSet<>();
         try {
             for (String line : Files.readAllLines(FILE)) {
                 String[] cells = line.split("\\|");
                 // 表格列：| 中文用語 | 程式名稱 | 種類 | 意思 |
                 if (cells.length < 5 || cells[2].isBlank() || cells[2].contains("---")) {
+                    continue;
+                }
+                if (!kindMatches.test(cells[3].strip())) {
                     continue;
                 }
                 for (String name : cells[2].split("／")) {

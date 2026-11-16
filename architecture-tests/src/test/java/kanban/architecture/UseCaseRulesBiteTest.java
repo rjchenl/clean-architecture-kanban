@@ -34,6 +34,16 @@ class UseCaseRulesBiteTest {
     }
 
     @Test
+    void DDD5_一個Repository自己載入存回兩個看板會被擋下() {
+        assertBites(UseCaseRules.ONE_AGGREGATE_PER_COMMAND, "directrepository");
+    }
+
+    @Test
+    void DDD5_對兩個看板各跑一次共用流程會被擋下() {
+        assertBites(UseCaseRules.ONE_AGGREGATE_PER_COMMAND, "twoboardcommands");
+    }
+
+    @Test
     void CQRS2_指令的Output帶畫面資料會被擋下() {
         assertBites(UseCaseRules.COMMAND_RESPONSE_CARRIES_NO_VIEW_DATA, "viewdata");
     }
