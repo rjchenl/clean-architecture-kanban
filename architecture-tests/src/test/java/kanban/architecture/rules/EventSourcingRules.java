@@ -57,7 +57,9 @@ public final class EventSourcingRules {
 
     private static final Set<String> JDBC_USERS = Set.of("PostgresEventStore", "PostgresReadModelStore",
             // 流程分析防腐層的讀取位置（設計第 0 節 4d）
-            "PostgresActivityPositionStore");
+            "PostgresActivityPositionStore",
+            // 看板管理的看板動態紀錄（第二階段設計第 0 節 4d）
+            "PostgresBoardActivityLog");
 
     /**
      * ES-1：Interface Adapters 圈只有 PostgreSQL 版的事件庫與讀取模型可以碰資料庫。

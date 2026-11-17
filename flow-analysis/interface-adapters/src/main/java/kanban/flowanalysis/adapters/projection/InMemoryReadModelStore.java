@@ -8,12 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import kanban.flowanalysis.adapters.projection.FlowBoardDocument.ColumnEntry;
-import kanban.flowanalysis.adapters.projection.FlowBoardDocument.WorkItemEntry;
-import kanban.flowanalysis.usecases.queries.viewflowmetrics.ColumnMetrics;
 import kanban.flowanalysis.usecases.queries.viewflowmetrics.Delivery;
 import kanban.flowanalysis.usecases.queries.viewflowmetrics.FlowMetrics;
-import kanban.flowanalysis.usecases.queries.viewflowmetrics.StuckWorkItem;
 import kanban.flowanalysis.usecases.queries.viewflowmetrics.WeeklyCompletion;
 
 /** 記憶體版流程分析讀取模型。統計方式 S1 由 {@link WeekCalendar} 決定，S2 在 {@link #flowMetrics} 算。 */
@@ -105,19 +101,13 @@ public final class InMemoryReadModelStore implements ReadModelStore {
         return List.copyOf(boards.keySet());
     }
 
-    /** 統計方式 S2：各欄張數與停留平均、最近 8 週每週完成數、8 週內完成的交付時間平均與最長。平均四捨五入到整數秒。 */
+    /** 統計方式 S2：最近 8 週每週完成數、8 週內完成的交付時間平均與最長（平均四捨五入到整數秒）；其餘交給 FlowMetricsAssembler。 */
     @Override
     public synchronized Optional<FlowMetrics> flowMetrics(String boardFlowId, Instant asOf) {
         FlowBoardDocument doc = boards.get(boardFlowId);
         if (doc == null) {
             return Optional.empty();
         }
-        List<ColumnMetrics> columns = doc.columns().stream()
-                .filter(column -> !column.removed())
-                .map(column -> new ColumnMetrics(column.flowColumnId(), column.name(), column.stage(),
-                        (int) doc.workItems().stream().filter(item -> item.flowColumnId().equals(column.flowColumnId())).count(),
-                        column.dwellCount() == 0 ? null : Math.round((double) column.dwellSecondsTotal() / column.dwellCount())))
-                .toList();
         List<Instant> weekStarts = calendar.recentWeekStarts(asOf, RECENT_WEEKS);
         Set<Instant> window = new HashSet<>(weekStarts);
         List<Completion> recent = completions.values().stream()
@@ -133,18 +123,7 @@ public final class InMemoryReadModelStore implements ReadModelStore {
                 : new Delivery(recent.size(),
                         Math.round(recent.stream().mapToLong(Completion::leadTimeSeconds).average().orElseThrow()),
                         recent.stream().mapToLong(Completion::leadTimeSeconds).max().orElseThrow());
-        List<StuckWorkItem> stuck = doc.workItems().stream()
-                .filter(WorkItemEntry::stuck)
-                .map(item -> new StuckWorkItem(item.workItemId(), item.title(), columnName(doc, item.flowColumnId()),
-                        item.stuckSince()))
-                .toList();
-        return Optional.of(new FlowMetrics(doc.boardFlowId(), doc.name(), doc.archived(), doc.stuckThresholdDays(),
-                columns, weeks, delivery, stuck));
-    }
-
-    private static String columnName(FlowBoardDocument doc, String columnId) {
-        return doc.columns().stream().filter(column -> column.flowColumnId().equals(columnId))
-                .map(ColumnEntry::name).findFirst().orElse("");
+        return Optional.of(FlowMetricsAssembler.assemble(doc, weeks, delivery));
     }
 
     private void requireTransaction() {

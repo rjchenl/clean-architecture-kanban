@@ -36,10 +36,12 @@ class WriteSideSchemaTest {
 
     @Test
     void 寫入端只有事件表() throws SQLException {
-        // board_events 是寫入端唯一的表；其餘三張是可隨時清掉重建的讀取模型，flyway_schema_history 是資料庫版本紀錄
+        // board_events 是寫入端唯一的表；其餘四張是可隨時清掉重建的讀取模型，flyway_schema_history 是資料庫版本紀錄
         assertThat(query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"))
                 .containsExactlyInAnyOrder("board_events", "board_view", "card_history_view",
-                        "projection_checkpoint", "flyway_schema_history");
+                        "projection_checkpoint", "flyway_schema_history",
+                        // 看板動態紀錄：讀取模型，可以清掉重建（第二階段設計第 0 節 4d）
+                        "board_activity_log");
     }
 
     @Test
