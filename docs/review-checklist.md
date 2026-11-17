@@ -44,7 +44,7 @@
 | 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-05 | 通過 | 加入流程分析沒有修改看板管理既有的 Use Case、Controller、Presenter；看板管理只新增「讀取看板動態」查詢與看板動態的 Projection。修改到的既有檔案（`git diff --name-status` 逐一核對）只有：`BadRequestHandling` 的範圍（裁決 4，行為不變，`看板管理的端點_請求讀不懂時仍回看板管理的訊息` 證明）、Use Cases 圈的 `module-info` 多公開新的查詢套件、前端進入點搬到 `main/web-ui`（設計第 8 節），以及測試 `WriteSideSchemaTest` 照 4d 加上新的表名。流程分析每個指令一個 Presenter（`ONE_PRESENTER_PER_OUTPUT`）。備註：新增 Use Case 仍須在 Main、薄殼與允許清單各加一段，屬於預期中的擴充點 |
 | 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-06 | 通過 | 同一套契約對兩個實作各跑一次：流程分析 `EventStoreContract`、`ReadModelStoreContract`（含統計方式 S1、S2）、防腐層 `ActivityPositionStoreContract`、看板管理 `BoardActivityLogStoreContract`；`FlowAnalysisInMemoryModeIntegrationTest` 證明整套流程分析換成記憶體儲存照常運作 |
 | 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-07 | 通過 | 流程分析一圈一個模組，防腐層獨立成 `board-activity-translation` 模組，所以流程分析的 Use Cases 與 Interface Adapters 圈不必相依看板管理；`FlowMetricsAssembler` 與兩個讀取模型實作放同一個套件（統計方式改了會一起改）；流程分析的畫面是自己的前端 workspace |
-| 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-08 | 通過 | 聚合測試只經 `BoardFlowScenario`（Given 事件／When 指令／Then 事件）；Use Case 測試只經 Input／Output Boundary 與假的 Repository；轉接程式測試只經 Gateway 介面；整合測試對 Gateway 介面的公開方法做替身（例如讓 `activitiesAfter` 多回一筆）。流程分析與 main 的測試沒有讀私有欄位、沒有用反射（搜尋 `getDeclaredField`、`setAccessible` 為 0 筆） |
+| 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-08 | 通過 | 聚合測試只經 `BoardFlowScenario`（Given 事件／When 指令／Then 事件）；Use Case 測試只經 Input／Output Boundary 與假的 Repository；轉接程式測試只經 Gateway 介面；整合測試對 Gateway 介面的公開方法做替身（例如讓 `activitiesAfter` 多回一筆）。流程分析與 main 的測試沒有讀私有欄位（搜尋 `getDeclaredField`、`setAccessible` 為 0 筆）。用到反射的只有讀公開介面：`EventStoreContract` 用 `getMethods` 檢查事件庫介面沒有更新與刪除、`ReplayTest` 與 `BoardFlowEventJsonTest` 用 `getPermittedSubclasses` 列出全部事件種類，和第一階段的備註同一類 |
 | 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-09 | 通過 | 流程分析領域模型的公開名稱都在用語表的流程分析一節（`GlossaryTest` 依情境檢查）；類別名稱沒有 Manager、Helper、Data、Util、Service。非公開的輔助類別 `Immutable`、`FlowRules`、`Identifiers`、`DisplayText` 與內部物件 `FlowColumn`、`WorkItem`、`ColumnVisit`、`FlowResult` 都是套件內可見 |
 | 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-10 | 通過 | 流程分析 5 個指令 Use Case 都只透過 `BoardFlowCommand` 載入並儲存一個看板流程（`OneFlowPerCommandCheckTest`、`ONE_AGGREGATE_PER_COMMAND`） |
 | 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-11 | 通過 | 流程分析的 Use Case 只做「取出→呼叫聚合一個方法→存回」。`RecordBoardActivityUseCase` 依變化種類決定呼叫哪個方法、檢查必要欄位、看板流程不存在時遇到「建立」才建立，屬於協調與輸入完整性；重送略過（F14）等規則都在聚合。卡住門檻的範圍由 `StuckThreshold` 值物件檢查。Controller 只組 Request，Presenter 只查表轉文字 |
@@ -98,11 +98,11 @@
 - **第二階段**：
   - 從看板頁的「流程分析」連結進入，流程分析頁有「回到看板」。
   - 替每一欄指定階段，表格的階段文字跟著變。
-  - 在另一個分頁把卡片拖到「完成」欄，1.5 秒後流程分析的張數跟著變。
+  - 在另一個分頁把卡片拖到「完成」欄，1.5 秒後流程分析的資料跟著變（用流程分析的 API 每 0.2 秒查一次量到的；流程分析頁不會自己更新，要重新整理才看到）。
   - 「完成」欄原本未分類、改成「完成」後，交付立刻變成「完成 1 張」、本週「1 張」（整段歷史重算）。
   - 卡住門檻：填 0 被拒絕（「卡住門檻要是 1 到 365 天」）；設定 5 天顯示「卡住門檻 5 天」與「取消門檻」按鈕；取消後回到「沒有設定卡住門檻」。
-  - 在看板上刪除「暫存」欄，1.9 秒後流程分析同步；在還開著的舊流程分析頁改「暫存」的階段，被拒絕並顯示「這個欄位已經刪除，不能再改階段」，畫面重讀後該欄消失。
+  - 在看板上刪除「暫存」欄，1.9 秒後流程分析同步（同樣用 API 量）；在還開著的舊流程分析頁改「暫存」的階段，被拒絕並顯示「這個欄位已經刪除，不能再改階段」，畫面重讀後該欄消失。
   - 剛建立、還沒同步的看板打開流程分析頁，顯示「流程分析還沒準備好，請稍後重新整理」；重新整理後顯示該看板。
-  - 封存看板後，流程分析 1 秒內顯示「已封存」。
-- **console**：沒有 JavaScript 錯誤。被標成 error 的只有瀏覽器對 3 個刻意觸發的 4xx 回覆自動記的網路紀錄（兩個 422：門檻 0 天、改已刪除欄位的階段；一個 404：還沒同步的看板），這是設計上用 HTTP 狀態碼表示「被拒絕」「找不到」。另有「表單欄位沒有 id 或 name」的提示，第一階段的畫面就有，不是錯誤。
+  - 封存看板後，流程分析的資料 1 秒內變成「已封存」（用 API 量）。
+- **console**：讀到的範圍內沒有 JavaScript 錯誤。範圍只涵蓋第二階段那段的操作：瀏覽器只保留最近幾次頁面載入的紀錄，第一階段重走的那段沒有在當下讀 console，所以那一段的 console 未經查核。被標成 error 的只有瀏覽器對 3 個刻意觸發的 4xx 回覆自動記的網路紀錄（兩個 422：門檻 0 天、改已刪除欄位的階段；一個 404：還沒同步的看板），這是設計上用 HTTP 狀態碼表示「被拒絕」「找不到」。另有「表單欄位沒有 id 或 name」的提示，第一階段的畫面就有，不是錯誤。
 - **沒有在瀏覽器驗到的**：卡住清單出現工作項目要真的待滿門檻天數（最少 1 天），瀏覽器實測等不了；由整合測試 `情況3_待滿門檻_檢查後列入卡住_換欄後下一次同步就移出`（把流程分析的時間調到 6 天後）與畫面測試 `顯示各欄階段張數與平均停留_原樣顯示ViewModel字串` 分別證明（L3＋元件測試，不是 L4）。
