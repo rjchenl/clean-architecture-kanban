@@ -24,5 +24,6 @@ input, textarea { border: 1px solid #c3c9d1; border-radius: 4px; padding: 2px 6p
 .app-main { padding: 16px; }
 .inline-form { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
 .muted { color: #66707a; font-size: 13px; }
+.page-links { margin-bottom: 8px; }
 .tag { background: #ffe8a3; border-radius: 4px; padding: 0 6px; font-size: 13px; }
 </style>

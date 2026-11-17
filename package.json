@@ -6,10 +6,11 @@
   "description": "看板系統的前端：進入點在 main/web-ui（前端的 Main），各業務情境的畫面各自一個 workspace，互不引用",
   "workspaces": [
     "main/web-ui",
-    "board-management/web-ui"
+    "board-management/web-ui",
+    "flow-analysis/web-ui"
   ],
   "scripts": {
-    "lint": "eslint board-management/web-ui/src main/web-ui/src",
+    "lint": "eslint board-management/web-ui/src flow-analysis/web-ui/src main/web-ui/src",
     "test": "npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present"
   },

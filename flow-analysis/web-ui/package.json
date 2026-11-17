@@ -1,0 +1,17 @@
+{
+  "name": "@kanban/flow-analysis-web-ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "流程分析的畫面：只把後端整理好的 ViewModel 顯示出來（規則 CA-9）。由 main/web-ui 的路由接起來",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "build": "vue-tsc --noEmit"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.45"
+  }
+}
