@@ -23,6 +23,11 @@ class DddRulesBiteTest {
     }
 
     @Test
+    void DDD8_沒照名稱慣例的Gateway實作放在最外圈會被擋下() {
+        assertBites(DddRules.REPOSITORY_INTERFACE_INSIDE_IMPL_OUTSIDE, "gatewayunnamed");
+    }
+
+    @Test
     void DDD2_另一個情境引用看板的領域類別會被擋下() {
         assertBites(DddRules.contextsDoNotShareDomain("kanban.fixtures.contexts"), "contexts");
     }
