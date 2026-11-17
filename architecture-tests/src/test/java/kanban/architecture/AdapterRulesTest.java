@@ -21,4 +21,9 @@ class AdapterRulesTest {
     void CA11_DIP_Controller只用InputBoundary() {
         AdapterRules.CONTROLLERS_USE_ONLY_INPUT_BOUNDARIES.check(Imported.production());
     }
+
+    @Test
+    void DDD3_防腐層只翻譯() {
+        AdapterRules.TRANSLATION_ONLY_TRANSLATES.check(Imported.production());
+    }
 }

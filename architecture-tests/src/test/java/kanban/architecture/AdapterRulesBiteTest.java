@@ -32,4 +32,9 @@ class AdapterRulesBiteTest {
     void CA8_Controller認識Presenter會被擋下() {
         assertBites(AdapterRules.CONTROLLERS_USE_ONLY_INPUT_BOUNDARIES, "controllerknowspresenter");
     }
+
+    @Test
+    void DDD3_防腐層碰Projection又兼任讀取模型會被擋下() {
+        assertBites(AdapterRules.TRANSLATION_ONLY_TRANSLATES, "translationleaks");
+    }
 }
