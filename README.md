@@ -27,9 +27,10 @@
 
 ## 狀態
 
-第一階段「看板管理」開發中。每一條規則目前到哪裡，以 [`docs/traceability.md`](docs/traceability.md) 為準——那張表每個規則編號一列，寫明落在哪個模組、由哪一支測試或檢查守住、目前狀態。
+- 第一階段：業務情境「看板管理」（看板、欄位、卡片、在製品上限、卡片移動歷程）。
+- 第二階段：第二個業務情境「流程分析」（每一欄算哪個階段、交付時間、每週完成數、卡住的工作項目），由看板管理公布的「看板動態」經防腐層接過來，實作了跨情境整合（DDD-3）。
 
-「跨情境整合」（DDD-3）要到第二階段加入第二個業務情境才會實作，所以目前不宣稱整個專案「符合 DDD」。
+每一條規則目前到哪裡，以 [`docs/traceability.md`](docs/traceability.md) 為準——那張表每個規則編號一列，寫明落在哪個模組、由哪一支測試或檢查守住、目前狀態。
 
 ## 文件
 
@@ -37,6 +38,8 @@
 |---|---|
 | [`CLAUDE.md`](CLAUDE.md) | 專案規範：四套方法共 39 條規則，每條附驗證方式 |
 | [`docs/design/phase-one-board-management.md`](docs/design/phase-one-board-management.md) | 第一階段設計：範圍、做法的取捨、業務規則、一致性說明 |
+| [`docs/design/phase-two-flow-analysis.md`](docs/design/phase-two-flow-analysis.md) | 第二階段設計：流程分析的業務規則、兩個情境怎麼接、統計方式、一致性說明 |
+| [`docs/plans/phase-two-flow-analysis-plan.md`](docs/plans/phase-two-flow-analysis-plan.md) | 第二階段實作計畫：逐步的工作包與新增的架構規則 |
 | [`docs/traceability.md`](docs/traceability.md) | 規則對照表 |
 | [`docs/glossary.md`](docs/glossary.md) | 業務用語表（程式裡的名稱必須出現在這裡） |
 | [`docs/context-map.md`](docs/context-map.md) | 業務情境之間的關係 |
@@ -51,7 +54,14 @@ board-management/            業務情境：看板管理
 ├── interface-adapters/      第 3 圈：Controller、Presenter、事件庫與讀取模型的轉接程式、Projection
 ├── frameworks-drivers/      第 4 圈：Spring 的 HTTP 薄殼、資料庫結構
 └── web-ui/                  第 4 圈：看板管理的 Vue 畫面（由 main/web-ui 的路由接起來）
-main/                        Main：建立所有物件並接起來
+flow-analysis/               業務情境：流程分析（資料庫 schema flow_analysis）
+├── entities/                第 1 圈：看板流程聚合、值物件、領域事件（純 Java，零相依）
+├── use-cases/               第 2 圈：5 個指令與 2 個查詢（只相依 entities）
+├── interface-adapters/      第 3 圈：Controller、Presenter、事件庫與讀取模型的轉接程式、Projection
+├── board-activity-translation/  第 3 圈：防腐層——把看板管理公布的看板動態翻成流程分析的用語
+├── frameworks-drivers/      第 4 圈：Spring 的 HTTP 薄殼、背景排程、資料庫結構
+└── web-ui/                  第 4 圈：流程分析的 Vue 畫面
+main/                        Main：建立所有物件並接起來（兩個情境的跨情境接線只在這裡）
 └── web-ui/                  前端的 Main：進入點、路由、最外層版面
 architecture-tests/          架構測試（ArchUnit）；每條規則都附一個故意違規的樣本
 ```
@@ -81,6 +91,27 @@ npm run dev -w main/web-ui
 ```bash
 ./mvnw -q -pl main spring-boot:run -Dspring-boot.run.arguments=--kanban.storage=memory
 ```
+
+## 流程分析
+
+看板頁上方的「流程分析」連結進入（`/boards/<看板識別碼>/flow`）。看板上的變化由背景排程同步過來，大約 2 秒內反映在流程分析頁。
+
+| 方法與路徑 | 做什麼 |
+|---|---|
+| `GET /api/flow-analysis/boards/{boardId}` | 流程分析頁的資料；看板剛建立、還沒同步過來時回 404 與「流程分析還沒準備好，請稍後重新整理」 |
+| `PUT /api/flow-analysis/boards/{boardId}/columns/{columnId}/stage`，內容 `{"stage": "IN_PROGRESS"}` | 把一個欄位歸到某個階段（`UNCLASSIFIED`、`NOT_STARTED`、`IN_PROGRESS`、`DONE`）；整段歷史在同一個請求內重算 |
+| `PUT /api/flow-analysis/boards/{boardId}/stuck-threshold`，內容 `{"days": 5}` | 設定卡住門檻（1 到 365 天） |
+| `DELETE /api/flow-analysis/boards/{boardId}/stuck-threshold` | 取消卡住門檻 |
+
+背景排程的設定（`main/src/main/resources/application.yml`）：
+
+| 設定 | 預設值 | 意思 |
+|---|---|---|
+| `kanban.flow-analysis.background` | `true` | `false` 時不跑背景排程（只有測試會關掉） |
+| `kanban.flow-analysis.sync-interval` | `PT2S` | 多久讀一次看板動態 |
+| `kanban.flow-analysis.stuck-check-interval` | `PT10M` | 多久檢查一次卡住的工作項目 |
+
+第一階段的資料庫第一次用第二階段的程式啟動時，會自動建立流程分析的資料表，並把第一階段以來的全部歷史補進流程分析。
 
 ## 跑全部檢查
 

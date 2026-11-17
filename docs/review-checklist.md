@@ -36,6 +36,20 @@
 | 2026-11-14 | `460bbda` 之後的工作區（Task 18） | R-09 | 通過 | 領域模型的公開名稱都在用語表（`GlossaryTest`）。非公開的輔助類別 `Text`、`Ordered` 不是業務概念，沒有 Manager／Helper／Data 這類名稱 |
 | 2026-11-14 | `460bbda` 之後的工作區（Task 18） | R-10 | 通過 | 14 個指令 Use Case 都只透過 `BoardCommand` 載入並儲存一個看板（另有 `ONE_AGGREGATE_PER_COMMAND` 規則） |
 | 2026-11-14 | `460bbda` 之後的工作區（Task 18） | R-11 | 通過 | Use Case 只有「取出→呼叫聚合一個方法→存回」；Controller 只組 Request（數字為空時丟 IllegalArgumentException，屬於輸入格式檢查，不是業務判斷）；Presenter 只查表轉文字；Projector 照抄事件、不重新檢查規則（`ProjectorsTest.Projection不重新檢查業務規則_事件說了算`） |
+| 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-01 | 通過 | 流程分析的 `FlowAnalysisView`、`StageTable`、`StuckList` 只顯示 ViewModel 的字串。備註：`StageTable.choose` 送出後把下拉選單放回「改成…」，是畫面狀態；`StuckList` 用標題加時間當 Vue 的 key，不顯示給人看。ESLint 的格式化限制對流程分析的畫面與元件也會擋（`screensDoNotFormat.spec.ts`，先縮小限制看到失敗再還原） |
+| 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-02 | 通過 | `FlowAnalysisView.run` 在改階段、儲存門檻、取消門檻之後都重新讀取；四支元件測試都斷言重讀了一次。沒有先改畫面資料的程式 |
+| 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-03 | 通過 | 前端不檢查天數範圍：0 天照樣送出，由後端回「卡住門檻要是 1 到 365 天」（`被拒絕_顯示訊息`）。「取消門檻」按鈕依 ViewModel 的 `hasStuckThreshold` 顯示；每一欄都可以改階段，能不能改由後端決定 |
+| 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-14 | 通過 | 階段的中文、平均停留的天數、每週的日期、卡住的起始時間、交付摘要都由 `FlowMetricsPresenter` 整理，畫面原樣顯示；前端不判斷算不算完成、算不算卡住。備註：門檻輸入框一開始是空的、送出數字，畫面沒有用 `stuckThresholdDays` 預填（預填要把字串轉成數字，畫面不做轉換；見第二階段 Task 16 的裁決） |
+| 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-04 | 通過 | 流程規則只在 `flow-analysis/entities`（`BoardFlow`、`FlowRules`、值物件）；畫面文字只在 `CommandPresenter`、`FlowMetricsPresenter`；儲存方式只在 `adapters.eventstore`、`adapters.projection`、防腐層的 `ActivityPositionStore` 兩個實作。翻譯只在防腐層 |
+| 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-05 | 通過 | 加入流程分析沒有修改看板管理既有的 Use Case、Controller、Presenter；看板管理只新增「讀取看板動態」查詢與看板動態的 Projection。修改到的既有檔案（`git diff --name-status` 逐一核對）只有：`BadRequestHandling` 的範圍（裁決 4，行為不變，`看板管理的端點_請求讀不懂時仍回看板管理的訊息` 證明）、Use Cases 圈的 `module-info` 多公開新的查詢套件、前端進入點搬到 `main/web-ui`（設計第 8 節），以及測試 `WriteSideSchemaTest` 照 4d 加上新的表名。流程分析每個指令一個 Presenter（`ONE_PRESENTER_PER_OUTPUT`）。備註：新增 Use Case 仍須在 Main、薄殼與允許清單各加一段，屬於預期中的擴充點 |
+| 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-06 | 通過 | 同一套契約對兩個實作各跑一次：流程分析 `EventStoreContract`、`ReadModelStoreContract`（含統計方式 S1、S2）、防腐層 `ActivityPositionStoreContract`、看板管理 `BoardActivityLogStoreContract`；`FlowAnalysisInMemoryModeIntegrationTest` 證明整套流程分析換成記憶體儲存照常運作 |
+| 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-07 | 通過 | 流程分析一圈一個模組，防腐層獨立成 `board-activity-translation` 模組，所以流程分析的 Use Cases 與 Interface Adapters 圈不必相依看板管理；`FlowMetricsAssembler` 與兩個讀取模型實作放同一個套件（統計方式改了會一起改）；流程分析的畫面是自己的前端 workspace |
+| 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-08 | 通過 | 聚合測試只經 `BoardFlowScenario`（Given 事件／When 指令／Then 事件）；Use Case 測試只經 Input／Output Boundary 與假的 Repository；轉接程式測試只經 Gateway 介面；整合測試對 Gateway 介面的公開方法做替身（例如讓 `activitiesAfter` 多回一筆）。流程分析與 main 的測試沒有讀私有欄位、沒有用反射（搜尋 `getDeclaredField`、`setAccessible` 為 0 筆） |
+| 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-09 | 通過 | 流程分析領域模型的公開名稱都在用語表的流程分析一節（`GlossaryTest` 依情境檢查）；類別名稱沒有 Manager、Helper、Data、Util、Service。非公開的輔助類別 `Immutable`、`FlowRules`、`Identifiers`、`DisplayText` 與內部物件 `FlowColumn`、`WorkItem`、`ColumnVisit`、`FlowResult` 都是套件內可見 |
+| 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-10 | 通過 | 流程分析 5 個指令 Use Case 都只透過 `BoardFlowCommand` 載入並儲存一個看板流程（`OneFlowPerCommandCheckTest`、`ONE_AGGREGATE_PER_COMMAND`） |
+| 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-11 | 通過 | 流程分析的 Use Case 只做「取出→呼叫聚合一個方法→存回」。`RecordBoardActivityUseCase` 依變化種類決定呼叫哪個方法、檢查必要欄位、看板流程不存在時遇到「建立」才建立，屬於協調與輸入完整性；重送略過（F14）等規則都在聚合。卡住門檻的範圍由 `StuckThreshold` 值物件檢查。Controller 只組 Request，Presenter 只查表轉文字 |
+| 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-12 | 通過 | `FlowBoardProjector` 只照事件記下的值更新：停留時間由聚合寫在 `WorkItemMoved` 裡，Projector 只加總與計數；`FlowProjection` 只依 `WorkItemFlowResultChanged` 的完成時間與交付時間存或刪完成紀錄。週的切法只在 `WeekCalendar`（S1：週一 00:00、Main 傳入時區、最近 8 週含本週）；平均與最長只算 8 週內完成的（S2，記憶體版與 PostgreSQL 版各跑同一套契約） |
+| 2026-11-17 | `e7e94cf`（第二階段，流程分析） | R-13 | 通過 | `BoardActivityTranslation` 只把看板動態的欄位對應到流程分析的用語（逐一列出 11 種、沒有 default）；`BoardActivitySync` 只讀取、翻譯、送「記錄看板動態」，依回覆前進、重試（版本衝突 3 次）或停住；看板管理的型別不出防腐層（`RecordBoardActivityRequest` 全是流程分析的用語）。另有 `TRANSLATION_ONLY_TRANSLATES` 與 `CONTEXTS_INTEGRATE_ONLY_THROUGH_PUBLISHED_LANGUAGE` 自動檢查 |
 
 ### 2026-11-14 這次審查的說明
 
@@ -70,3 +84,25 @@
 - 把後端停掉後送出指令、重新整理頁面：畫面顯示「系統暫時無法處理，請稍後再試」，沒有出現「找不到這個看板」；原本畫面上的看板在送出指令失敗時保持不動。
 - 沒有重測的項目（程式沒有改到，沿用第一次實測）：看板改名與封存、欄位改名／調整順序／取消上限／刪除、卡片改內容／欄內排序／刪除、卡片移動歷程、重啟後端後資料仍在。
 
+### 2026-11-17 第二階段審查的說明
+
+- 範圍：第二階段（流程分析）在 `e7e94cf` 的程式，加上看板管理為第二階段新增的部分。R-01～R-03 這次只審流程分析的畫面；看板管理的畫面在第二階段只搬了進入點，畫面元件沒有改，沿用 2026-11-14 的紀錄。
+- 審查者是撰寫這些程式的同一個 AI（Claude），不是獨立的第二人。獨立審查另由整個分支的最終審查負責，結果會追加在下面。
+
+### 2026-11-17 第二階段瀏覽器實測（commit `e7e94cf`）
+
+用 Chrome（chrome-devtools）對真的後端（PostgreSQL）與前端開發伺服器操作。主目錄另有第一階段的伺服器占用 8080／5173，所以這次後端用 8081、前端用 5174（臨時設定，未提交）。
+
+- **第一次升級（Review Focus 4）**：本機開發資料庫原本是第一階段的資料（6 個看板、52 筆事件、資料庫版本 V2）。第二階段後端啟動時自動升到 V3、建立 `flow_analysis` 的三版結構；看板動態紀錄從第一筆事件補齊 47 筆（另外 5 筆是欄內排序與在製品上限，照設計不公布），處理位置 52；流程分析在幾秒內同步到位置 52，6 個看板都有流程分析。
+- **第一階段重走一遍**（前端進入點搬家後）：建看板、看板改名、封存；欄位新增、改名、拖動調整順序、設定與取消在製品上限、刪除；卡片新增、編輯、拖到另一欄、拖到已滿的欄被拒絕（「這一欄已達在製品上限，放不進去」）、欄內拖動排序、刪除；卡片移動歷程。拖放都是真的拖放操作。
+- **第二階段**：
+  - 從看板頁的「流程分析」連結進入，流程分析頁有「回到看板」。
+  - 替每一欄指定階段，表格的階段文字跟著變。
+  - 在另一個分頁把卡片拖到「完成」欄，1.5 秒後流程分析的張數跟著變。
+  - 「完成」欄原本未分類、改成「完成」後，交付立刻變成「完成 1 張」、本週「1 張」（整段歷史重算）。
+  - 卡住門檻：填 0 被拒絕（「卡住門檻要是 1 到 365 天」）；設定 5 天顯示「卡住門檻 5 天」與「取消門檻」按鈕；取消後回到「沒有設定卡住門檻」。
+  - 在看板上刪除「暫存」欄，1.9 秒後流程分析同步；在還開著的舊流程分析頁改「暫存」的階段，被拒絕並顯示「這個欄位已經刪除，不能再改階段」，畫面重讀後該欄消失。
+  - 剛建立、還沒同步的看板打開流程分析頁，顯示「流程分析還沒準備好，請稍後重新整理」；重新整理後顯示該看板。
+  - 封存看板後，流程分析 1 秒內顯示「已封存」。
+- **console**：沒有 JavaScript 錯誤。被標成 error 的只有瀏覽器對 3 個刻意觸發的 4xx 回覆自動記的網路紀錄（兩個 422：門檻 0 天、改已刪除欄位的階段；一個 404：還沒同步的看板），這是設計上用 HTTP 狀態碼表示「被拒絕」「找不到」。另有「表單欄位沒有 id 或 name」的提示，第一階段的畫面就有，不是錯誤。
+- **沒有在瀏覽器驗到的**：卡住清單出現工作項目要真的待滿門檻天數（最少 1 天），瀏覽器實測等不了；由整合測試 `情況3_待滿門檻_檢查後列入卡住_換欄後下一次同步就移出`（把流程分析的時間調到 6 天後）與畫面測試 `顯示各欄階段張數與平均停留_原樣顯示ViewModel字串` 分別證明（L3＋元件測試，不是 L4）。
