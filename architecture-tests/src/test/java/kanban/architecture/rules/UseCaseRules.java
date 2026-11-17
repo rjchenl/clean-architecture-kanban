@@ -280,7 +280,9 @@ public final class UseCaseRules {
             + "|recordboardactivity|setcolumnstage|setstuckthreshold|removestuckthreshold|checkstuckworkitems";
     private static final String QUERY_USE_CASES = "viewboard|listboards|viewcardhistory"
             // 看板管理對其他業務情境公布的看板動態（設計第 0 節 4d）
-            + "|readboardactivities";
+            + "|readboardactivities"
+            // 流程分析的查詢（第二階段設計第 0 節 4d）
+            + "|viewflowmetrics|listboardflows";
 
     /** 允許清單寫死在這裡：新增 Use Case 時要同時改這份清單（CA-10）。 */
     private static final Pattern ALLOWED_USE_CASE_PACKAGES = Pattern.compile(".*\\.usecases\\.("
