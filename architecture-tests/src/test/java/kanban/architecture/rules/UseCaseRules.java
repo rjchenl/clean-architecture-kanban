@@ -275,8 +275,14 @@ public final class UseCaseRules {
 
     private static final String COMMAND_USE_CASES = "createboard|renameboard|archiveboard|addcolumn|renamecolumn"
             + "|movecolumn|setcolumnwiplimit|removecolumnwiplimit|removecolumn|addcard|changecardcontent|movecard"
-            + "|repositioncard|removecard";
-    private static final String QUERY_USE_CASES = "viewboard|listboards|viewcardhistory";
+            + "|repositioncard|removecard"
+            // 流程分析的指令（第二階段設計第 0 節 4d）
+            + "|recordboardactivity|setcolumnstage|setstuckthreshold|removestuckthreshold|checkstuckworkitems";
+    private static final String QUERY_USE_CASES = "viewboard|listboards|viewcardhistory"
+            // 看板管理對其他業務情境公布的看板動態（設計第 0 節 4d）
+            + "|readboardactivities"
+            // 流程分析的查詢（第二階段設計第 0 節 4d）
+            + "|viewflowmetrics|listboardflows";
 
     /** 允許清單寫死在這裡：新增 Use Case 時要同時改這份清單（CA-10）。 */
     private static final Pattern ALLOWED_USE_CASE_PACKAGES = Pattern.compile(".*\\.usecases\\.("

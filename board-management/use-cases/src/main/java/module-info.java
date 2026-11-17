@@ -22,4 +22,6 @@ module kanban.boardmanagement.usecases {
     exports kanban.boardmanagement.usecases.queries.viewboard;
     exports kanban.boardmanagement.usecases.queries.listboards;
     exports kanban.boardmanagement.usecases.queries.viewcardhistory;
+    // 對其他業務情境公布的看板動態（Published Language，DDD-3）
+    exports kanban.boardmanagement.usecases.queries.readboardactivities;
 }

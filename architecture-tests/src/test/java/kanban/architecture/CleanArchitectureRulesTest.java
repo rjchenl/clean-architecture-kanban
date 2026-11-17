@@ -15,6 +15,11 @@ class CleanArchitectureRulesTest {
                 .anyMatch(p -> p.startsWith("kanban.boardmanagement.entities"))
                 .anyMatch(p -> p.startsWith("kanban.boardmanagement.usecases"))
                 .anyMatch(p -> p.startsWith("kanban.boardmanagement.adapters"))
+                .anyMatch(p -> p.startsWith("kanban.flowanalysis.entities"))
+                .anyMatch(p -> p.startsWith("kanban.flowanalysis.usecases"))
+                .anyMatch(p -> p.startsWith("kanban.flowanalysis.adapters"))
+                .anyMatch(p -> p.startsWith("kanban.flowanalysis.adapters.boardactivity"))
+                .anyMatch(p -> p.startsWith("kanban.flowanalysis.frameworks"))
                 .anyMatch(p -> p.startsWith("kanban.main"));
     }
 
@@ -56,6 +61,11 @@ class CleanArchitectureRulesTest {
     @Test
     void CA8_只有Main知道具體實作() {
         CleanArchitectureRules.ONLY_MAIN_KNOWS_IMPLEMENTATIONS.check(Imported.production());
+    }
+
+    @Test
+    void CA8_Main的套件只來自main模組() {
+        CleanArchitectureRules.MAIN_PACKAGE_ONLY_IN_MAIN_MODULE.check(Imported.production());
     }
 
     @Test

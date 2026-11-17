@@ -1,8 +1,15 @@
 kanban:
   # 儲存方式：postgres（預設）或 memory（不需要資料庫，重啟後資料消失）
   storage: postgres
-  # 畫面上的時間用哪個時區顯示
+  # 畫面上的時間用哪個時區顯示（流程分析的「一週」也依這個時區切）
   display-zone: Asia/Taipei
+  flow-analysis:
+    # 背景排程：true＝定時同步看板動態、定時檢查卡住；false＝關掉（只有測試會關）
+    background: true
+    # 多久讀一次看板動態（ISO-8601 時間長度）
+    sync-interval: PT2S
+    # 多久檢查一次卡住的工作項目
+    stuck-check-interval: PT10M
   datasource:
     # 本機開發用的資料庫，對應專案根目錄的 compose.yaml；其他環境用環境變數覆蓋
     url: ${KANBAN_DB_URL:jdbc:postgresql://localhost:5432/kanban}

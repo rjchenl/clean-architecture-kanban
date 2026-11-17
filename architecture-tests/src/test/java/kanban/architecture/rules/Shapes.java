@@ -12,12 +12,19 @@ final class Shapes {
         return (type.getPackageName() + ".").contains("." + segment + ".");
     }
 
-    /** Gateway 介面：Repository、事件存取、讀取模型的 Reader。 */
+    /**
+     * Gateway 介面：原本的名稱條件（Repository、事件存取、讀取模型的 Reader），
+     * 或者形狀條件（規則目錄 B5）：Use Cases 圈的 top-level 介面，不在 impl、support，也不是 Input／Output Boundary。
+     * 兩個條件任一成立就算——Use Case 向外要東西的介面不管叫什麼名字都會被認出來。
+     */
     static boolean isGatewayInterface(JavaClass type) {
         String name = type.getSimpleName();
-        return type.isInterface()
-                && (name.endsWith("Repository") || name.equals("EventStore") || name.equals("EventFeed")
-                        || name.endsWith("Reader"));
+        boolean byName = name.endsWith("Repository") || name.equals("EventStore") || name.equals("EventFeed")
+                || name.endsWith("Reader");
+        boolean byShape = inPackage(type, "usecases") && type.isTopLevelClass()
+                && !inPackage(type, "impl") && !inPackage(type, "support")
+                && !name.endsWith("Input") && !name.endsWith("Output");
+        return type.isInterface() && (byName || byShape);
     }
 
     static boolean implementsGateway(JavaClass type) {

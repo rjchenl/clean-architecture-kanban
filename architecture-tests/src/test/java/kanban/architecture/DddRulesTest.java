@@ -16,4 +16,9 @@ class DddRulesTest {
     void DDD2_業務情境之間不共用領域類別() {
         DddRules.CONTEXTS_DO_NOT_SHARE_DOMAIN.check(Imported.production());
     }
+
+    @Test
+    void DDD3_業務情境之間只透過公布格式與防腐層整合() {
+        DddRules.CONTEXTS_INTEGRATE_ONLY_THROUGH_PUBLISHED_LANGUAGE.check(Imported.production());
+    }
 }

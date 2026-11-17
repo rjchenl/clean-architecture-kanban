@@ -20,16 +20,14 @@ jobs:
   frontend:
     name: 前端：lint、元件測試、型別檢查與打包
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: board-management/web-ui
+    # 前端用 npm workspaces，指令都在專案根目錄執行（進入點在 main/web-ui，各業務情境的畫面各自一個 workspace）
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version-file: board-management/web-ui/.nvmrc
+          node-version-file: .nvmrc
           cache: npm
-          cache-dependency-path: board-management/web-ui/package-lock.json
+          cache-dependency-path: package-lock.json
       - run: npm ci
       - run: npm run lint
       - run: npm test

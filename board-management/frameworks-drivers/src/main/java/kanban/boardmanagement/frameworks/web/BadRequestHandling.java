@@ -10,8 +10,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * 請求內容讀不懂（不是合法 JSON、型別不對）時的統一回覆。只處理這一種情況；
  * 其他例外是程式錯誤或系統故障，照常回 500，不包裝成「請求不完整」。
  * 回覆的內容與訊息向 BoardManagementRequests 要，薄殼自己不寫任何文字。
+ * 只管看板管理自己的端點：流程分析有自己的訊息與自己的處理（第二階段設計第 0 節第 3 點的裁決）。
  */
-@RestControllerAdvice
+@RestControllerAdvice(basePackageClasses = BoardHttpEndpoints.class)
 class BadRequestHandling {
 
     private final BoardManagementRequests requests;

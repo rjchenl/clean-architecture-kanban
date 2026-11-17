@@ -15,6 +15,31 @@ class EntitiesRulesTest {
                 .as("檔名不以 Test 結尾的測試程式也要檢查").isTrue();
         assertThat(Imported.entitiesTests().contain("kanban.boardmanagement.entities.board.Board"))
                 .as("正式程式碼不屬於聚合測試").isFalse();
+        // 第二個業務情境的聚合測試也讀得到（architecture-tests 的 pom 有它的 test-jar）
+        assertThat(Imported.entitiesTests().contain("kanban.flowanalysis.entities.boardflow.BoardFlowScenario"))
+                .as("流程分析的聚合測試也要檢查").isTrue();
+        assertThat(Imported.entitiesTests().contain("kanban.flowanalysis.entities.boardflow.BoardFlow"))
+                .as("正式程式碼不屬於聚合測試").isFalse();
+    }
+
+    /**
+     * ES-5 的檢查對象不能漏掉任何業務情境：正式程式碼裡有 entities 圈的情境，它的聚合測試都要讀得到。
+     * 新增業務情境時忘了把 entities 的 test-jar 加進 architecture-tests 的 pom，這裡會失敗，
+     * 而不是讓 AGGREGATE_TESTS_USE_SCENARIO 默默看不到新情境的聚合測試。依形狀找情境，不列情境名稱。
+     */
+    @Test
+    void ES5_每個有Entities圈的業務情境_它的聚合測試都讀得到() {
+        assertThat(contextsWithEntities(Imported.entitiesTests()))
+                .as("這些業務情境有 entities 圈，但 architecture-tests 讀不到它們的聚合測試（pom 少了 entities 的 test-jar）")
+                .containsAll(contextsWithEntities(Imported.production()));
+    }
+
+    private static java.util.Set<String> contextsWithEntities(com.tngtech.archunit.core.domain.JavaClasses classes) {
+        return classes.stream()
+                .map(com.tngtech.archunit.core.domain.JavaClass::getPackageName)
+                .filter(name -> name.matches("kanban\\.[a-z]+\\.entities(\\..+)?"))
+                .map(name -> name.split("\\.")[1])
+                .collect(java.util.stream.Collectors.toSet());
     }
 
     @Test
@@ -49,8 +74,8 @@ class EntitiesRulesTest {
 
     @Test
     void DDD5_聚合之間不互相持有物件() {
-        // 目前只有一個聚合（Board），允許沒有可比較的對象
-        EntitiesRules.AGGREGATE_REFERENCES_BY_ID.allowEmptyShould(true).check(Imported.production());
+        // 第二階段起有兩個聚合（entities.board 的看板、entities.boardflow 的看板流程），各自是一塊，不再需要允許沒有對象
+        EntitiesRules.AGGREGATE_REFERENCES_BY_ID.check(Imported.production());
     }
 
     @Test

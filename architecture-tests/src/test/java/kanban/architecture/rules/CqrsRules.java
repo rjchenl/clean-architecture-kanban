@@ -6,12 +6,16 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaMethodCall;
+import com.tngtech.archunit.core.domain.JavaMethodReference;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
+import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 /** CQRS 的架構規則。規則編號對應專案 CLAUDE.md。 */
 public final class CqrsRules {
@@ -38,19 +42,73 @@ public final class CqrsRules {
             .should().dependOnClassesThat().resideInAnyPackage("..usecases.queries..", "..adapters.projection..")
             .as("CQRS-4 寫入端（聚合、指令 Use Case、事件庫）不得引用讀取模型");
 
-    /** 讀取模型的儲存：ReadModelStore 介面本身，或任何實作它的類別。 */
+    /**
+     * 讀取模型的儲存，兩個條件任一成立就算（第二階段補強：只會更嚴，不會更鬆）：
+     * (1) 名稱：ReadModelStore 介面本身，或任何實作它的類別；
+     * (2) 形狀：Interface Adapters 圈裡、實作查詢端 Gateway 介面（usecases.queries 底下、不是 Input／Output 的介面）的型別——
+     *     換個名字、換個套件的儲存也認得出來（2026-11-17 獨立審查 I-3：原本還要求放在 projection 套件，換套件就認不出來）。
+     */
     private static boolean isReadModelStore(JavaClass type) {
-        return type.getSimpleName().equals("ReadModelStore")
+        boolean byName = type.getSimpleName().equals("ReadModelStore")
                 || type.getAllRawInterfaces().stream().anyMatch(i -> i.getSimpleName().equals("ReadModelStore"));
+        boolean byShape = Shapes.inPackage(type, "adapters")
+                && type.getAllRawInterfaces().stream()
+                        .anyMatch(i -> isQueryInterface(i) && Shapes.isGatewayInterface(i));
+        return byName || byShape;
+    }
+
+    private static boolean isQueryInterface(JavaClass type) {
+        return type.isInterface() && Shapes.inPackage(type, "usecases") && Shapes.inPackage(type, "queries");
+    }
+
+    /** 正式程式碼裡被認成讀取模型儲存的型別（給「每個儲存都被認到」的測試用）。 */
+    public static Set<String> readModelStoresIn(JavaClasses classes) {
+        Set<String> stores = new TreeSet<>();
+        for (JavaClass type : classes) {
+            if (isReadModelStore(type)) {
+                stores.add(type.getName());
+            }
+        }
+        return stores;
     }
 
     private static final Set<String> READ_MODEL_WRITES =
             Set.of("saveBoard", "saveCardHistory", "advanceCheckpoint", "reset", "inExclusiveTransaction");
 
+    private static final Set<String> OBJECT_METHODS = Set.of("equals", "hashCode", "toString", "getClass");
+
+    /**
+     * 呼叫的是不是讀取模型儲存的寫入方法，兩個條件任一成立就算：
+     * (1) 名稱在舊的名單裡；(2) 儲存自己宣告、但沒有任何查詢端介面宣告過的方法（查詢端介面宣告的才是「讀」）。
+     */
+    private static boolean isReadModelWrite(JavaClass owner, String name, List<JavaClass> parameterTypes) {
+        if (!isReadModelStore(owner)) {
+            return false;
+        }
+        if (READ_MODEL_WRITES.contains(name)) {
+            return true;
+        }
+        if (OBJECT_METHODS.contains(name)) {
+            return false;
+        }
+        List<String> parameters = parameterNames(parameterTypes);
+        boolean declaredByQuerySide = owner.getAllRawInterfaces().stream()
+                .filter(CqrsRules::isQueryInterface)
+                .flatMap(query -> query.getMethods().stream())
+                .anyMatch(read -> read.getName().equals(name)
+                        && parameterNames(read.getRawParameterTypes()).equals(parameters));
+        return !declaredByQuerySide;
+    }
+
+    private static List<String> parameterNames(List<JavaClass> types) {
+        return types.stream().map(JavaClass::getName).toList();
+    }
+
     /**
      * CQRS-5、CA-11 ISP：讀取模型只能由 Projection 更新。
      * (1) 讀取模型儲存的寫入方法只有名稱以 Projection 結尾的類別可以呼叫；
-     * (2) 讀取模型的儲存只能被 adapters.projection 套件引用（Main 與最外圈不在檢查範圍）。
+     * (2) 讀取模型的儲存只能被 adapters.projection 套件引用（Main 與最外圈不在檢查範圍）；
+     * (3) 讀取模型的儲存本身只能放在 adapters.projection——放到別的套件，就能在那裡順手改它（2026-11-17 獨立審查 I-3）。
      * 「讀取模型的儲存」包含 ReadModelStore 介面與任何實作它的具體類別，直接拿具體類別也繞不過去。
      */
     public static final ArchRule ONLY_PROJECTION_WRITES_READ_MODEL = classes()
@@ -59,15 +117,25 @@ public final class CqrsRules {
                 @Override
                 public void check(JavaClass origin, ConditionEvents events) {
                     if (isReadModelStore(origin)) {
+                        if (!Shapes.inPackage(origin, "projection")) {
+                            events.add(SimpleConditionEvent.violated(origin,
+                                    origin.getName() + " 是讀取模型的儲存，只能放在 adapters.projection"));
+                        }
                         return;
                     }
                     boolean isProjection = origin.getSimpleName().endsWith("Projection");
                     boolean inProjectionPackage = Shapes.inPackage(origin, "projection");
                     for (JavaMethodCall call : origin.getMethodCallsFromSelf()) {
-                        boolean writesReadModel = isReadModelStore(call.getTargetOwner())
-                                && READ_MODEL_WRITES.contains(call.getTarget().getName());
-                        if (writesReadModel && !isProjection) {
+                        if (!isProjection && isReadModelWrite(call.getTargetOwner(), call.getTarget().getName(),
+                                call.getTarget().getRawParameterTypes())) {
                             events.add(SimpleConditionEvent.violated(call, call.getDescription()));
+                        }
+                    }
+                    // 方法參考（store::append）也是在寫入
+                    for (JavaMethodReference reference : origin.getMethodReferencesFromSelf()) {
+                        if (!isProjection && isReadModelWrite(reference.getTargetOwner(),
+                                reference.getTarget().getName(), reference.getTarget().getRawParameterTypes())) {
+                            events.add(SimpleConditionEvent.violated(reference, reference.getDescription()));
                         }
                     }
                     for (Dependency dependency : origin.getDirectDependenciesFromSelf()) {

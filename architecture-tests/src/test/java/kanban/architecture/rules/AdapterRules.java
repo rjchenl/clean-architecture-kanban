@@ -88,4 +88,34 @@ public final class AdapterRules {
                 }
             })
             .as("CA-11 OCP 一個 Presenter 只實作一個 Output Boundary");
+
+    /**
+     * DDD-3、CA-11：防腐層只翻譯。
+     * (1) 只能相依 JDK（含 javax.sql）、自己、流程分析「記錄看板動態」指令的邊界與 commands 套件本身（CommandResponse、BoardChange）、
+     *     上游公布的看板動態；不認識 Controller、Presenter、事件庫、Projection、領域模型。
+     * (2) 只能實作上述 Use Cases 套件裡的 Output Boundary，以及自己的讀取位置儲存——不偷偷兼任別的角色。
+     * 看板管理的其他套件由 DddRules.CONTEXTS_INTEGRATE_ONLY_THROUGH_PUBLISHED_LANGUAGE 擋；用 JDBC 的類別由 JDBC_USERS 限定。
+     */
+    public static final ArchRule TRANSLATION_ONLY_TRANSLATES = classes()
+            .that().resideInAPackage("..adapters.boardactivity..")
+            .should().onlyDependOnClassesThat().resideInAnyPackage(
+                    "java..", "javax.sql..", "..adapters.boardactivity..",
+                    "..usecases.commands", "..usecases.commands.recordboardactivity",
+                    "..usecases.queries.readboardactivities")
+            .andShould(new ArchCondition<>("只實作 Output Boundary 與自己的讀取位置儲存") {
+                @Override
+                public void check(JavaClass translator, ConditionEvents events) {
+                    for (JavaClass implemented : translator.getRawInterfaces()) {
+                        boolean outputBoundary = Shapes.inPackage(implemented, "usecases")
+                                && implemented.getSimpleName().endsWith("Output");
+                        boolean ownPositionStore = Shapes.inPackage(implemented, "boardactivity")
+                                && implemented.getSimpleName().equals("ActivityPositionStore");
+                        if (!outputBoundary && !ownPositionStore) {
+                            events.add(SimpleConditionEvent.violated(translator, translator.getName()
+                                    + " 實作了 " + implemented.getName() + "：防腐層只翻譯，不兼任別的角色"));
+                        }
+                    }
+                }
+            })
+            .as("DDD-3 防腐層只翻譯：只碰記錄看板動態的邊界、看板動態的公布格式與自己");
 }

@@ -98,6 +98,10 @@ public final class CleanArchitectureRules {
                         root + ".boardmanagement.usecases..",
                         root + ".boardmanagement.adapters..",
                         root + ".boardmanagement.frameworks..",
+                        root + ".flowanalysis.entities..",
+                        root + ".flowanalysis.usecases..",
+                        root + ".flowanalysis.adapters..",
+                        root + ".flowanalysis.frameworks..",
                         root + ".main..")
                 .as("CA-10 最上層套件只能是業務情境（其下分四圈）與 main");
     }
@@ -176,6 +180,32 @@ public final class CleanArchitectureRules {
     public static final ArchRule ADAPTER_PACKAGES_ON_ALLOW_LIST = classes()
             .that().resideInAPackage("..adapters..")
             .should().resideInAnyPackage("..adapters.controllers", "..adapters.presenters", "..adapters.eventstore",
-                    "..adapters.projection", "..adapters.system")
-            .as("CA-10 Interface Adapters 圈只有 controllers、presenters、eventstore、projection、system 五個套件");
+                    "..adapters.projection", "..adapters.system", "..adapters.boardactivity")
+            .as("CA-10 Interface Adapters 圈只有 controllers、presenters、eventstore、projection、system，"
+                    + "以及流程分析的防腐層 boardactivity 六個套件");
+
+    /**
+     * CA-8（2026-11-17 獨立審查 I-2）：Main 不受圈與業務情境的限制，這個豁免只給真正的 main 模組。
+     * 依類別實際從哪個模組讀進來判斷，不看它宣告的套件——在情境模組裡寫 package kanban.main 借用豁免，會被擋下。
+     * main 模組的類別來自 main/target/classes，或 kanban-main 的 jar（同一次建置或本機 Maven 倉庫）。
+     */
+    public static ArchRule mainPackageComesOnlyFromMainModule(String mainPackage) {
+        return classes()
+                .that().resideInAPackage(mainPackage + "..")
+                .should(new ArchCondition<>("來自 main 模組") {
+                    @Override
+                    public void check(JavaClass type, ConditionEvents events) {
+                        String location = type.getSource().map(source -> source.getUri().toString()).orElse("");
+                        boolean fromMainModule = location.contains("/kanban-main-")
+                                || location.contains("/main/target/classes/");
+                        if (!fromMainModule) {
+                            events.add(SimpleConditionEvent.violated(type, type.getName()
+                                    + " 宣告在 Main 的套件，卻來自 " + location + "：Main 的豁免只給 main 模組"));
+                        }
+                    }
+                })
+                .as("CA-8 只有 main 模組可以使用 Main 的套件");
+    }
+
+    public static final ArchRule MAIN_PACKAGE_ONLY_IN_MAIN_MODULE = mainPackageComesOnlyFromMainModule("kanban.main");
 }
