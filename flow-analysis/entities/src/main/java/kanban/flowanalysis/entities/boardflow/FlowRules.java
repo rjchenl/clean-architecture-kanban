@@ -48,4 +48,17 @@ final class FlowRules {
     private static boolean isStartedOrDone(Stage stage) {
         return stage == Stage.IN_PROGRESS || stage == Stage.DONE;
     }
+
+    /**
+     * 算不算卡住（F8、F9、F11）：有門檻、沒被刪除、停在進行中的欄，而且在這一欄已經待滿門檻天數。
+     * 其他階段待再久都不算。
+     */
+    static boolean isStuck(WorkItem item, Function<FlowColumnId, Stage> stageOf, StuckThreshold threshold,
+            Instant now) {
+        if (threshold == null || item.removed() || stageOf.apply(item.currentColumn()) != Stage.IN_PROGRESS) {
+            return false;
+        }
+        Instant enteredAt = item.currentVisit().enteredAt();
+        return !now.isBefore(enteredAt.plus(threshold.length()));
+    }
 }

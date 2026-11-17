@@ -196,15 +196,51 @@ public final class BoardFlow {
         recordJudgements(at);
     }
 
+    /** 設定卡住門檻（F8），並立刻重新判斷（F10）。 */
+    public void setStuckThreshold(StuckThreshold threshold, Instant at) {
+        if (threshold.equals(stuckThreshold)) {
+            return;
+        }
+        record(new StuckThresholdSet(id, threshold, at));
+        recordJudgements(at);
+    }
+
+    /** 取消卡住門檻：之後不再判斷卡住，原本卡住的全部不再卡住（F8、F10）。 */
+    public void removeStuckThreshold(Instant at) {
+        if (stuckThreshold == null) {
+            return;
+        }
+        record(new StuckThresholdRemoved(id, at));
+        recordJudgements(at);
+    }
+
+    // ---------------------------------------------------------------- 定時檢查
+
+    /** 定時檢查卡住的工作項目（F10）。「現在」由外部帶進來，聚合不讀時鐘（ES-4）。 */
+    public void checkStuckWorkItems(Instant now) {
+        recordJudgements(now);
+    }
+
     // ---------------------------------------------------------------- 判斷結果（DDD-9：只在這裡判斷，結果寫成事件）
 
-    /** 照目前的設定重新判斷每一個工作項目，結果有變的才記錄（判斷時間是觸發這次判斷的那件事的時間）。 */
+    /**
+     * 照目前的設定重新判斷每一個工作項目，結果有變的才記錄：先是流程結果，再是卡住狀態。
+     * 判斷時間是觸發這次判斷的那件事的時間（看板上的事實、使用者的決定，或定時檢查帶進來的現在）。
+     * F10 列的是最少要判斷的時機；任何一件事發生時都重新判斷全部工作項目，結果只會更即時、不會更晚。
+     */
     private void recordJudgements(Instant at) {
         for (WorkItem item : workItems) {
             FlowResult result = FlowRules.resultOf(item, this::stageOf);
             if (!result.equals(item.result())) {
                 record(new WorkItemFlowResultChanged(id, item.id(), result.startedAt(), result.completedAt(),
                         result.leadTime(), at));
+            }
+        }
+        for (WorkItem item : workItems) {
+            boolean stuck = FlowRules.isStuck(item, this::stageOf, stuckThreshold, at);
+            if (stuck != item.stuck()) {
+                record(new WorkItemStuckStatusChanged(id, item.id(), stuck,
+                        stuck ? item.currentColumn() : null, stuck ? item.currentVisit().enteredAt() : null, at));
             }
         }
     }
