@@ -137,6 +137,7 @@ public final class BoardFlow {
         requireActiveColumn(columnId);
         requireWorkItemIdUnused(workItemId);
         record(new WorkItemAdded(id, position, workItemId, columnId, title, at));
+        recordJudgements(at);
     }
 
     /** 卡片內容改了。看板管理只改了說明時標題不變，不產生事件。 */
@@ -161,6 +162,7 @@ public final class BoardFlow {
         requireActiveColumn(to);
         DwellTime dwell = DwellTime.between(item.currentVisit().enteredAt(), at);
         record(new WorkItemMoved(id, position, workItemId, from, to, dwell, at));
+        recordJudgements(at);
     }
 
     /** 卡片被刪掉了。被刪除不算離開，所以沒有停留時間（F7）。 */
@@ -170,6 +172,47 @@ public final class BoardFlow {
         }
         requireActiveWorkItemIn(workItemId, from);
         record(new WorkItemRemoved(id, position, workItemId, from, at));
+        recordJudgements(at);
+    }
+
+    // ---------------------------------------------------------------- 使用者的決定
+
+    /**
+     * 替一欄指定階段（F1），並照新設定從頭重算所有工作項目（F6）。
+     * 已刪除的欄位不能再改階段（F12）；看板封存後照常可以改（F13）。
+     */
+    public void setColumnStage(FlowColumnId columnId, Stage stage, Instant at) {
+        FlowColumn column = columnOf(columnId);
+        if (column == null) {
+            throw new BusinessRuleViolation(RejectionReason.FLOW_COLUMN_NOT_FOUND);
+        }
+        if (column.removed()) {
+            throw new BusinessRuleViolation(RejectionReason.FLOW_COLUMN_REMOVED);
+        }
+        if (column.stage() == stage) {
+            return;
+        }
+        record(new ColumnStageSet(id, columnId, stage, at));
+        recordJudgements(at);
+    }
+
+    // ---------------------------------------------------------------- 判斷結果（DDD-9：只在這裡判斷，結果寫成事件）
+
+    /** 照目前的設定重新判斷每一個工作項目，結果有變的才記錄（判斷時間是觸發這次判斷的那件事的時間）。 */
+    private void recordJudgements(Instant at) {
+        for (WorkItem item : workItems) {
+            FlowResult result = FlowRules.resultOf(item, this::stageOf);
+            if (!result.equals(item.result())) {
+                record(new WorkItemFlowResultChanged(id, item.id(), result.startedAt(), result.completedAt(),
+                        result.leadTime(), at));
+            }
+        }
+    }
+
+    /** 欄位刪除後仍保留它的階段（F12）。 */
+    private Stage stageOf(FlowColumnId columnId) {
+        FlowColumn column = columnOf(columnId);
+        return column == null ? Stage.UNCLASSIFIED : column.stage();
     }
 
     // ---------------------------------------------------------------- 檢查（只在指令方法裡用）
