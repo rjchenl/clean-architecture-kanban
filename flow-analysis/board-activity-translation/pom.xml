@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>kanban</groupId>
+    <artifactId>kanban-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>flow-analysis-board-activity-translation</artifactId>
+  <description>流程分析的第 3 圈防腐層：把看板管理公布的看板動態翻成流程分析的用語。流程分析裡唯一認識看板管理的模組（DDD-3）。</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>kanban</groupId>
+      <artifactId>flow-analysis-use-cases</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>kanban</groupId>
+      <artifactId>board-management-use-cases</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- 讀取位置的契約測試打包成 test-jar，讓 frameworks-drivers 對 PostgreSQL 版實作跑同一套（CA-6） -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals><goal>test-jar</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- 設計第 4.2 節：防腐層只能相依流程分析的 Use Cases 與看板管理的 Use Cases（及它們各自帶進來的 Entities）。
+           searchTransitive 預設為 true，所以遞移帶進來的兩個 Entities 模組也要列出 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>translation-depends-only-on-use-cases</id>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <excludes>
+                    <exclude>*:*:*:*:compile</exclude>
+                    <exclude>*:*:*:*:runtime</exclude>
+                    <exclude>*:*:*:*:provided</exclude>
+                  </excludes>
+                  <includes>
+                    <include>kanban:flow-analysis-use-cases</include>
+                    <include>kanban:flow-analysis-entities</include>
+                    <include>kanban:board-management-use-cases</include>
+                    <include>kanban:board-management-entities</include>
+                  </includes>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

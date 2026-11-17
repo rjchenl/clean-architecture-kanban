@@ -53,7 +53,9 @@ public final class EventSourcingRules {
             })
             .as("ES-1 寫入端只有事件紀錄，不得另存聚合現況");
 
-    private static final Set<String> JDBC_USERS = Set.of("PostgresEventStore", "PostgresReadModelStore");
+    private static final Set<String> JDBC_USERS = Set.of("PostgresEventStore", "PostgresReadModelStore",
+            // 流程分析防腐層的讀取位置（設計第 0 節 4d）
+            "PostgresActivityPositionStore");
 
     /**
      * ES-1：Interface Adapters 圈只有 PostgreSQL 版的事件庫與讀取模型可以碰資料庫。

@@ -98,6 +98,10 @@ public final class CleanArchitectureRules {
                         root + ".boardmanagement.usecases..",
                         root + ".boardmanagement.adapters..",
                         root + ".boardmanagement.frameworks..",
+                        root + ".flowanalysis.entities..",
+                        root + ".flowanalysis.usecases..",
+                        root + ".flowanalysis.adapters..",
+                        root + ".flowanalysis.frameworks..",
                         root + ".main..")
                 .as("CA-10 最上層套件只能是業務情境（其下分四圈）與 main");
     }
@@ -176,6 +180,7 @@ public final class CleanArchitectureRules {
     public static final ArchRule ADAPTER_PACKAGES_ON_ALLOW_LIST = classes()
             .that().resideInAPackage("..adapters..")
             .should().resideInAnyPackage("..adapters.controllers", "..adapters.presenters", "..adapters.eventstore",
-                    "..adapters.projection", "..adapters.system")
-            .as("CA-10 Interface Adapters 圈只有 controllers、presenters、eventstore、projection、system 五個套件");
+                    "..adapters.projection", "..adapters.system", "..adapters.boardactivity")
+            .as("CA-10 Interface Adapters 圈只有 controllers、presenters、eventstore、projection、system，"
+                    + "以及流程分析的防腐層 boardactivity 六個套件");
 }

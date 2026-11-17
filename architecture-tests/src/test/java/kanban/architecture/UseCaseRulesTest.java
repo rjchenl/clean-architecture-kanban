@@ -80,6 +80,44 @@ class UseCaseRulesTest {
         assertThat(requiredModules(useCases)).containsExactly("kanban.boardmanagement.entities");
     }
 
+    @Test
+    void CA2_CA3_流程分析內兩圈的模組宣告不requires任何外部模組() throws IOException {
+        String entities = Files.readString(
+                Path.of("..", "flow-analysis", "entities", "src", "main", "java", "module-info.java"));
+        String useCases = Files.readString(
+                Path.of("..", "flow-analysis", "use-cases", "src", "main", "java", "module-info.java"));
+
+        assertThat(requiredModules(entities)).isEmpty();
+        assertThat(requiredModules(useCases)).containsExactly("kanban.flowanalysis.entities");
+    }
+
+    @Test
+    void CA7_流程分析Adapters模組宣告只requires允許的模組_不認識看板管理() throws IOException {
+        String moduleInfo = Files.readString(
+                Path.of("..", "flow-analysis", "interface-adapters", "src", "main", "java", "module-info.java"));
+
+        assertThat(requiredModules(moduleInfo)).containsExactlyInAnyOrder(
+                "kanban.flowanalysis.usecases", "java.sql", "tools.jackson.databind");
+    }
+
+    @Test
+    void CA16_DDD3_防腐層模組宣告只requires兩個情境的UseCases與JDBC() throws IOException {
+        // 設計第 0 節 4a：防腐層是流程分析裡唯一 requires 看板管理的模組
+        String moduleInfo = Files.readString(Path.of(
+                "..", "flow-analysis", "board-activity-translation", "src", "main", "java", "module-info.java"));
+
+        assertThat(requiredModules(moduleInfo)).containsExactlyInAnyOrder(
+                "kanban.flowanalysis.usecases", "kanban.boardmanagement.usecases", "java.sql");
+    }
+
+    @Test
+    void CA16_流程分析的模組宣告不公開impl與support套件() throws IOException {
+        String moduleInfo = Files.readString(
+                Path.of("..", "flow-analysis", "use-cases", "src", "main", "java", "module-info.java"));
+
+        assertThat(exportedPackages(moduleInfo)).isNotEmpty().noneMatch(UseCaseRulesTest::isInternal);
+    }
+
     private static List<String> requiredModules(String moduleInfo) {
         Matcher matcher = Pattern.compile("requires\\s+(?:transitive\\s+)?([\\w.]+)\\s*;").matcher(moduleInfo);
         return matcher.results().map(result -> result.group(1)).toList();

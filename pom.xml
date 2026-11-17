@@ -26,6 +26,11 @@
     <module>board-management/use-cases</module>
     <module>board-management/interface-adapters</module>
     <module>board-management/frameworks-drivers</module>
+    <module>flow-analysis/entities</module>
+    <module>flow-analysis/use-cases</module>
+    <module>flow-analysis/interface-adapters</module>
+    <module>flow-analysis/board-activity-translation</module>
+    <module>flow-analysis/frameworks-drivers</module>
     <module>main</module>
     <module>architecture-tests</module>
   </modules>
@@ -50,6 +55,31 @@
       <dependency>
         <groupId>kanban</groupId>
         <artifactId>board-management-frameworks-drivers</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>kanban</groupId>
+        <artifactId>flow-analysis-entities</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>kanban</groupId>
+        <artifactId>flow-analysis-use-cases</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>kanban</groupId>
+        <artifactId>flow-analysis-interface-adapters</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>kanban</groupId>
+        <artifactId>flow-analysis-board-activity-translation</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>kanban</groupId>
+        <artifactId>flow-analysis-frameworks-drivers</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

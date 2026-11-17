@@ -11,12 +11,14 @@ class GlossaryTest {
 
     @Test
     void 用語表讀得到名稱() {
-        assertThat(Glossary.codeNames()).contains("Board", "WipLimit", "CardMoved", "MoveCard");
+        assertThat(Glossary.codeNames()).contains("Board", "WipLimit", "CardMoved", "MoveCard",
+                "BoardFlow", "WorkItemMoved", "SetColumnStage");
     }
 
     @Test
     void 用語表讀得到聚合內部物件_DDD4規則靠它() {
-        assertThat(Glossary.codeNamesOfKind("聚合內部物件")).containsExactlyInAnyOrder("Column", "Card");
+        assertThat(Glossary.codeNamesOfKind("聚合內部物件")).containsExactlyInAnyOrder("Column", "Card",
+                "FlowColumn", "WorkItem", "ColumnVisit", "FlowResult");
     }
 
     @Test
