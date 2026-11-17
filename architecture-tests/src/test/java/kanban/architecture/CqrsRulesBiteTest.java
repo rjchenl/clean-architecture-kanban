@@ -34,6 +34,12 @@ class CqrsRulesBiteTest {
     }
 
     @Test
+    void CQRS5_換了名字的讀取模型儲存被別人寫入會被擋下() {
+        // 儲存不叫 ReadModelStore、寫入方法也不在舊的名單裡：只靠「在 adapters.projection、服務查詢端」的形狀認出來
+        assertBites(CqrsRules.ONLY_PROJECTION_WRITES_READ_MODEL, "readmodelbyshape");
+    }
+
+    @Test
     void CQRS4_指令UseCase用讀取模型做決定會被擋下() {
         assertBites(CqrsRules.COMMANDS_NEVER_READ_READ_MODEL, "commandreadsreadmodel");
     }
