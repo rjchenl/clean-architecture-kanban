@@ -15,6 +15,11 @@ class EntitiesRulesTest {
                 .as("檔名不以 Test 結尾的測試程式也要檢查").isTrue();
         assertThat(Imported.entitiesTests().contain("kanban.boardmanagement.entities.board.Board"))
                 .as("正式程式碼不屬於聚合測試").isFalse();
+        // 第二個業務情境的聚合測試也讀得到（architecture-tests 的 pom 有它的 test-jar）
+        assertThat(Imported.entitiesTests().contain("kanban.flowanalysis.entities.boardflow.BoardFlowScenario"))
+                .as("流程分析的聚合測試也要檢查").isTrue();
+        assertThat(Imported.entitiesTests().contain("kanban.flowanalysis.entities.boardflow.BoardFlow"))
+                .as("正式程式碼不屬於聚合測試").isFalse();
     }
 
     @Test
@@ -49,8 +54,8 @@ class EntitiesRulesTest {
 
     @Test
     void DDD5_聚合之間不互相持有物件() {
-        // 目前只有一個聚合（Board），允許沒有可比較的對象
-        EntitiesRules.AGGREGATE_REFERENCES_BY_ID.allowEmptyShould(true).check(Imported.production());
+        // 第二階段起有兩個聚合（entities.board 的看板、entities.boardflow 的看板流程），各自是一塊，不再需要允許沒有對象
+        EntitiesRules.AGGREGATE_REFERENCES_BY_ID.check(Imported.production());
     }
 
     @Test

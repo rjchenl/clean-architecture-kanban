@@ -49,6 +49,8 @@ public final class EntitiesRules {
             .and().areNotInterfaces()
             .and().areNotEnums()
             .and().doNotHaveSimpleName("Board")
+            // 流程分析的聚合根（第二階段設計第 0 節 4d）；兩個情境的例外類別都叫 BusinessRuleViolation
+            .and().doNotHaveSimpleName("BoardFlow")
             .and().doNotHaveSimpleName("BusinessRuleViolation")
             .should().beRecords()
             .as("DDD-6／DDD-7 值物件與領域事件必須是 record（不可變、以值比較）");
@@ -106,7 +108,10 @@ public final class EntitiesRules {
     /** 可以直接重播事件、讀未提交事件的測試程式：Given／When／Then 工具本身，與重播測試（ES-4 要直接驗重播）。 */
     private static final Set<String> SCENARIO_TOOLS_AND_REPLAY_TESTS = Set.of(
             "kanban.boardmanagement.entities.board.BoardScenario",
-            "kanban.boardmanagement.entities.board.ReplayTest");
+            "kanban.boardmanagement.entities.board.ReplayTest",
+            // 流程分析的 Given／When／Then 工具與重播測試（第二階段設計第 0 節 4d）
+            "kanban.flowanalysis.entities.boardflow.BoardFlowScenario",
+            "kanban.flowanalysis.entities.boardflow.ReplayTest");
 
     private static final DescribedPredicate<JavaClass> SCENARIO_TOOL_OR_REPLAY_TEST =
             new DescribedPredicate<>("是 Given／When／Then 工具或重播測試（含其巢狀類別）") {
@@ -267,6 +272,8 @@ public final class EntitiesRules {
                 private static final Set<String> BOOKKEEPING_FIELDS = Set.of("persistedVersion", "pendingEvents");
                 /** 只負責「記下新事件／清掉已存的事件」的方法，可以動未提交事件清單。 */
                 private static final Set<String> BOOKKEEPING_METHODS = Set.of("record", "markCommitted");
+                private static final Set<String> INITIALIZED_COLLECTION_FIELDS = Set.of("columns", "workItems");
+
                 private static final Set<String> COLLECTION_MUTATORS = Set.of("add", "addAll", "addFirst", "addLast",
                         "remove", "removeAll", "removeIf", "removeFirst", "removeLast", "retainAll", "clear", "set",
                         "sort", "replaceAll", "put", "putAll", "putIfAbsent", "compute", "computeIfAbsent",
@@ -282,7 +289,9 @@ public final class EntitiesRules {
                             boolean writesOwnState = access.getAccessType() == JavaFieldAccess.AccessType.SET
                                     && access.getTargetOwner().equals(aggregate)
                                     && !BOOKKEEPING_FIELDS.contains(access.getTarget().getName());
-                            boolean initializer = unit.isConstructor() && access.getTarget().getName().equals("columns");
+                            // 建構子裡把集合欄位設成空清單的初始值；流程分析的看板流程另有 workItems（第二階段設計第 0 節 4d）
+                            boolean initializer = unit.isConstructor()
+                                    && INITIALIZED_COLLECTION_FIELDS.contains(access.getTarget().getName());
                             if (writesOwnState && !initializer) {
                                 events.add(SimpleConditionEvent.violated(access, access.getDescription()));
                             }
