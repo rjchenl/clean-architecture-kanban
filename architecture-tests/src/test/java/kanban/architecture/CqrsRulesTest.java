@@ -31,7 +31,9 @@ class CqrsRulesTest {
                 "kanban.boardmanagement.adapters.projection.ReadModelStore",
                 "kanban.boardmanagement.adapters.projection.InMemoryReadModelStore",
                 "kanban.boardmanagement.adapters.projection.BoardActivityLogStore",
-                "kanban.boardmanagement.adapters.projection.InMemoryBoardActivityLog");
+                "kanban.boardmanagement.adapters.projection.InMemoryBoardActivityLog",
+                "kanban.flowanalysis.adapters.projection.ReadModelStore",
+                "kanban.flowanalysis.adapters.projection.InMemoryReadModelStore");
     }
 
     @Test

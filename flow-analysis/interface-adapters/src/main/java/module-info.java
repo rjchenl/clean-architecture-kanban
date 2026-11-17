@@ -5,5 +5,6 @@ module kanban.flowanalysis.adapters {
     requires tools.jackson.databind;
 
     exports kanban.flowanalysis.adapters.eventstore;
+    exports kanban.flowanalysis.adapters.projection;
     exports kanban.flowanalysis.adapters.system;
 }
