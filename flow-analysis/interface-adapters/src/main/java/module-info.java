@@ -4,7 +4,9 @@ module kanban.flowanalysis.adapters {
     requires java.sql;
     requires tools.jackson.databind;
 
+    exports kanban.flowanalysis.adapters.controllers;
     exports kanban.flowanalysis.adapters.eventstore;
     exports kanban.flowanalysis.adapters.projection;
+    exports kanban.flowanalysis.adapters.presenters;
     exports kanban.flowanalysis.adapters.system;
 }
