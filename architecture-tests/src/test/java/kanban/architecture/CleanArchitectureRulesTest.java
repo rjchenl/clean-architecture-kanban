@@ -64,6 +64,11 @@ class CleanArchitectureRulesTest {
     }
 
     @Test
+    void CA8_Main的套件只來自main模組() {
+        CleanArchitectureRules.MAIN_PACKAGE_ONLY_IN_MAIN_MODULE.check(Imported.production());
+    }
+
+    @Test
     void CA11_ISP_事件存取依使用者拆開() {
         CleanArchitectureRules.EVENT_ACCESS_IS_SEGREGATED.check(Imported.production());
     }

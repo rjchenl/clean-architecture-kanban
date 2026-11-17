@@ -137,7 +137,7 @@ public final class BoardFlow {
         requireActiveColumn(columnId);
         requireWorkItemIdUnused(workItemId);
         record(new WorkItemAdded(id, position, workItemId, columnId, title, at));
-        recordJudgements(at);
+        recordJudgementsOf(workItemId, at);
     }
 
     /** 卡片內容改了。看板管理只改了說明時標題不變，不產生事件。 */
@@ -162,7 +162,7 @@ public final class BoardFlow {
         requireActiveColumn(to);
         DwellTime dwell = DwellTime.between(item.currentVisit().enteredAt(), at);
         record(new WorkItemMoved(id, position, workItemId, from, to, dwell, at));
-        recordJudgements(at);
+        recordJudgementsOf(workItemId, at);
     }
 
     /** 卡片被刪掉了。被刪除不算離開，所以沒有停留時間（F7）。 */
@@ -172,7 +172,7 @@ public final class BoardFlow {
         }
         requireActiveWorkItemIn(workItemId, from);
         record(new WorkItemRemoved(id, position, workItemId, from, at));
-        recordJudgements(at);
+        recordJudgementsOf(workItemId, at);
     }
 
     // ---------------------------------------------------------------- 使用者的決定
@@ -224,11 +224,28 @@ public final class BoardFlow {
     // ---------------------------------------------------------------- 判斷結果（DDD-9：只在這裡判斷，結果寫成事件）
 
     /**
-     * 照目前的設定重新判斷每一個工作項目，結果有變的才記錄：先是流程結果，再是卡住狀態。
-     * 判斷時間是觸發這次判斷的那件事的時間（看板上的事實、使用者的決定，或定時檢查帶進來的現在）。
-     * F10 列的是最少要判斷的時機；任何一件事發生時都重新判斷全部工作項目，結果只會更即時、不會更晚。
+     * 使用者的決定（改階段、改門檻）與定時檢查：照目前的設定重新判斷每一個工作項目，結果有變的才記錄——
+     * 先是流程結果，再是卡住狀態。判斷時間是這次決定或檢查的時間（流程分析的現在）。
      */
     private void recordJudgements(Instant at) {
+        recordFlowResults(at);
+        for (WorkItem item : workItems) {
+            recordStuckStatus(item, at);
+        }
+    }
+
+    /**
+     * 看板上的事實（工作項目新增、換欄、被刪除）：卡住只重新判斷被動到的那個工作項目，用事實自己的時間（F10、F15）。
+     * 其他工作項目的卡住與這件事無關；用事實的時間重判它們，在同步積壓、看板時鐘回撥或兩邊時鐘不一致時，
+     * 會把已經卡住、完全沒動的工作項目誤記成「不再卡住」（2026-11-17 獨立審查 I-5）。
+     * 流程結果只看工作項目經過的欄位、與判斷時間無關，照樣全部重算。
+     */
+    private void recordJudgementsOf(WorkItemId touched, Instant at) {
+        recordFlowResults(at);
+        recordStuckStatus(workItemOf(touched), at);
+    }
+
+    private void recordFlowResults(Instant at) {
         for (WorkItem item : workItems) {
             FlowResult result = FlowRules.resultOf(item, this::stageOf);
             if (!result.equals(item.result())) {
@@ -236,12 +253,13 @@ public final class BoardFlow {
                         result.leadTime(), at));
             }
         }
-        for (WorkItem item : workItems) {
-            boolean stuck = FlowRules.isStuck(item, this::stageOf, stuckThreshold, at);
-            if (stuck != item.stuck()) {
-                record(new WorkItemStuckStatusChanged(id, item.id(), stuck,
-                        stuck ? item.currentColumn() : null, stuck ? item.currentVisit().enteredAt() : null, at));
-            }
+    }
+
+    private void recordStuckStatus(WorkItem item, Instant at) {
+        boolean stuck = FlowRules.isStuck(item, this::stageOf, stuckThreshold, at);
+        if (stuck != item.stuck()) {
+            record(new WorkItemStuckStatusChanged(id, item.id(), stuck,
+                    stuck ? item.currentColumn() : null, stuck ? item.currentVisit().enteredAt() : null, at));
         }
     }
 

@@ -45,14 +45,15 @@ public final class CqrsRules {
     /**
      * 讀取模型的儲存，兩個條件任一成立就算（第二階段補強：只會更嚴，不會更鬆）：
      * (1) 名稱：ReadModelStore 介面本身，或任何實作它的類別；
-     * (2) 形狀：放在 adapters.projection、而且服務查詢端（是某個 usecases.queries 介面的子型別）的型別——
-     *     換個名字的儲存也認得出來。
+     * (2) 形狀：Interface Adapters 圈裡、實作查詢端 Gateway 介面（usecases.queries 底下、不是 Input／Output 的介面）的型別——
+     *     換個名字、換個套件的儲存也認得出來（2026-11-17 獨立審查 I-3：原本還要求放在 projection 套件，換套件就認不出來）。
      */
     private static boolean isReadModelStore(JavaClass type) {
         boolean byName = type.getSimpleName().equals("ReadModelStore")
                 || type.getAllRawInterfaces().stream().anyMatch(i -> i.getSimpleName().equals("ReadModelStore"));
-        boolean byShape = Shapes.inPackage(type, "adapters") && Shapes.inPackage(type, "projection")
-                && type.getAllRawInterfaces().stream().anyMatch(CqrsRules::isQueryInterface);
+        boolean byShape = Shapes.inPackage(type, "adapters")
+                && type.getAllRawInterfaces().stream()
+                        .anyMatch(i -> isQueryInterface(i) && Shapes.isGatewayInterface(i));
         return byName || byShape;
     }
 
@@ -106,7 +107,8 @@ public final class CqrsRules {
     /**
      * CQRS-5、CA-11 ISP：讀取模型只能由 Projection 更新。
      * (1) 讀取模型儲存的寫入方法只有名稱以 Projection 結尾的類別可以呼叫；
-     * (2) 讀取模型的儲存只能被 adapters.projection 套件引用（Main 與最外圈不在檢查範圍）。
+     * (2) 讀取模型的儲存只能被 adapters.projection 套件引用（Main 與最外圈不在檢查範圍）；
+     * (3) 讀取模型的儲存本身只能放在 adapters.projection——放到別的套件，就能在那裡順手改它（2026-11-17 獨立審查 I-3）。
      * 「讀取模型的儲存」包含 ReadModelStore 介面與任何實作它的具體類別，直接拿具體類別也繞不過去。
      */
     public static final ArchRule ONLY_PROJECTION_WRITES_READ_MODEL = classes()
@@ -115,6 +117,10 @@ public final class CqrsRules {
                 @Override
                 public void check(JavaClass origin, ConditionEvents events) {
                     if (isReadModelStore(origin)) {
+                        if (!Shapes.inPackage(origin, "projection")) {
+                            events.add(SimpleConditionEvent.violated(origin,
+                                    origin.getName() + " 是讀取模型的儲存，只能放在 adapters.projection"));
+                        }
                         return;
                     }
                     boolean isProjection = origin.getSimpleName().endsWith("Projection");

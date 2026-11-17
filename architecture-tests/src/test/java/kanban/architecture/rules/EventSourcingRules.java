@@ -55,11 +55,17 @@ public final class EventSourcingRules {
             })
             .as("ES-1 寫入端只有事件紀錄，不得另存聚合現況");
 
-    private static final Set<String> JDBC_USERS = Set.of("PostgresEventStore", "PostgresReadModelStore",
-            // 流程分析防腐層的讀取位置（設計第 0 節 4d）
-            "PostgresActivityPositionStore",
+    /** 用完整類別名比對：只比簡名的話，別的套件取個同名類別就能碰資料庫（2026-11-17 獨立審查 M-6）。 */
+    private static final Set<String> JDBC_USERS = Set.of(
+            "kanban.boardmanagement.adapters.eventstore.PostgresEventStore",
+            "kanban.boardmanagement.adapters.projection.PostgresReadModelStore",
             // 看板管理的看板動態紀錄（第二階段設計第 0 節 4d）
-            "PostgresBoardActivityLog");
+            "kanban.boardmanagement.adapters.projection.PostgresBoardActivityLog",
+            // 流程分析的事件庫與讀取模型（第二階段設計第 0 節 4d）
+            "kanban.flowanalysis.adapters.eventstore.PostgresEventStore",
+            "kanban.flowanalysis.adapters.projection.PostgresReadModelStore",
+            // 流程分析防腐層的讀取位置（設計第 0 節 4d）
+            "kanban.flowanalysis.adapters.boardactivity.PostgresActivityPositionStore");
 
     /**
      * ES-1：Interface Adapters 圈只有 PostgreSQL 版的事件庫與讀取模型可以碰資料庫。
@@ -74,7 +80,7 @@ public final class EventSourcingRules {
                     while (topLevel.getEnclosingClass().isPresent()) {
                         topLevel = topLevel.getEnclosingClass().get();
                     }
-                    if (JDBC_USERS.contains(topLevel.getSimpleName())) {
+                    if (JDBC_USERS.contains(topLevel.getName())) {
                         return;
                     }
                     type.getDirectDependenciesFromSelf().stream()

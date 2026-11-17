@@ -70,6 +70,42 @@ class StuckRulesTest {
         return new WorkItemStuckStatusChanged(FLOW, W1, false, null, null, days(atDay));
     }
 
+    // ---------------------------------------------------------------- 判斷時間不倒退（2026-11-17 獨立審查 I-5）
+
+    /**
+     * 同步積壓、看板時鐘回撥或兩邊時鐘不一致時，事實的看板時間會早於上一次判斷的時間。用那個較早的時間重判全部，
+     * 已經卡住、完全沒動的工作項目會被記成「不再卡住」——一筆假的事實。看板上的事實只重判被動到的工作項目（F10）。
+     */
+    @Test
+    void 已經卡住_晚到的事實帶著較早的看板時間_沒動的工作項目不會翻回不卡住() {
+        WorkItemId w2 = new WorkItemId("card-2");
+        given(array(stuckSinceDay6()))
+                .when(flow -> flow.addWorkItem(at(7), w2, TODO, new WorkItemTitle("寫文件"), days(4)))
+                .thenEvents(new WorkItemAdded(FLOW, at(7), w2, TODO, new WorkItemTitle("寫文件"), days(4)));
+    }
+
+    @Test
+    void 晚到的換欄事實_被動到的工作項目用事實的時間判斷_不再卡住() {
+        given(array(stuckSinceDay6()))
+                .when(flow -> flow.moveWorkItem(at(7), W1, DOING, DONE, days(4)))
+                .thenEvents(
+                        new WorkItemMoved(FLOW, at(7), W1, DOING, DONE, new DwellTime(Duration.ofDays(3)), days(4)),
+                        new WorkItemFlowResultChanged(FLOW, W1, days(1), days(4), new LeadTime(Duration.ofDays(3)), days(4)),
+                        unstuck(4));
+    }
+
+    @Test
+    void 晚到的事實只重判被動到的工作項目_另一張卡住的不受影響() {
+        WorkItemId w2 = new WorkItemId("card-2");
+        BoardFlowEvent[] history = array(plus(stuckSinceDay6(),
+                new WorkItemAdded(FLOW, at(7), w2, DOING, new WorkItemTitle("寫文件"), days(6)),
+                new WorkItemFlowResultChanged(FLOW, w2, days(6), null, null, days(6))));
+        given(history)
+                .when(flow -> flow.moveWorkItem(at(8), w2, DOING, TODO, days(5)))
+                // W1 沒有任何事件；W2 移回未開始仍保留開始時間（F3），所以也沒有流程結果的變化
+                .thenEvents(new WorkItemMoved(FLOW, at(8), w2, DOING, TODO, new DwellTime(Duration.ZERO), days(5)));
+    }
+
     // ---------------------------------------------------------------- F8：門檻
 
     @Test
