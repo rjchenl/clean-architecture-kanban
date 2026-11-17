@@ -9,4 +9,5 @@ module kanban.flowanalysis.usecases {
     exports kanban.flowanalysis.usecases.commands.setstuckthreshold;
     exports kanban.flowanalysis.usecases.commands.removestuckthreshold;
     exports kanban.flowanalysis.usecases.commands.checkstuckworkitems;
+    exports kanban.flowanalysis.usecases.eventfeed;
 }
