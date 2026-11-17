@@ -1,0 +1,17 @@
+{
+  "name": "@kanban/main-web-ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "前端的 Main：進入點、路由、最外層版面，把各業務情境的畫面接起來（CA-8）",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@kanban/board-management-web-ui": "0.1.0",
+    "vue": "^3.5.45",
+    "vue-router": "^4.6.5"
+  }
+}

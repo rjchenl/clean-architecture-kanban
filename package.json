@@ -1,0 +1,33 @@
+{
+  "name": "kanban-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "看板系統的前端：進入點在 main/web-ui（前端的 Main），各業務情境的畫面各自一個 workspace，互不引用",
+  "workspaces": [
+    "main/web-ui",
+    "board-management/web-ui"
+  ],
+  "scripts": {
+    "lint": "eslint board-management/web-ui/src main/web-ui/src",
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.11",
+    "@vue/test-utils": "^2.5.1",
+    "eslint": "^10.15.0",
+    "eslint-plugin-vue": "^10.12.1",
+    "jsdom": "^31.0.1",
+    "typescript": "~6.0.0",
+    "typescript-eslint": "^8.72.2",
+    "vite": "^8.3.8",
+    "vitest": "^4.1.12",
+    "vue": "^3.5.45",
+    "vue-router": "^4.6.5",
+    "vue-tsc": "^3.3.14"
+  },
+  "engines": {
+    "node": "^22.12.0 || >=24.0.0"
+  }
+}

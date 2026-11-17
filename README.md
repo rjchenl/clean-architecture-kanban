@@ -50,8 +50,9 @@ board-management/            業務情境：看板管理
 ├── use-cases/               第 2 圈：14 個指令與 3 個查詢（只相依 entities）
 ├── interface-adapters/      第 3 圈：Controller、Presenter、事件庫與讀取模型的轉接程式、Projection
 ├── frameworks-drivers/      第 4 圈：Spring 的 HTTP 薄殼、資料庫結構
-└── web-ui/                  第 4 圈：Vue 畫面
+└── web-ui/                  第 4 圈：看板管理的 Vue 畫面（由 main/web-ui 的路由接起來）
 main/                        Main：建立所有物件並接起來
+└── web-ui/                  前端的 Main：進入點、路由、最外層版面
 architecture-tests/          架構測試（ArchUnit）；每條規則都附一個故意違規的樣本
 ```
 
@@ -67,11 +68,13 @@ docker compose up -d
 ./mvnw -q -DskipTests install
 ./mvnw -q -pl main spring-boot:run
 
-# 3. 啟動前端（http://localhost:5173）
-cd board-management/web-ui
+# 3. 啟動前端（http://localhost:5173）：在專案根目錄執行
 npm ci
-npm run dev
+npm run dev -w main/web-ui
 ```
+
+前端用 npm workspaces：專案根目錄的 `package.json` 只列出 workspaces 與共用的開發工具；
+`main/web-ui` 是前端的進入點，各業務情境的 `web-ui` 各自一個 workspace，彼此不互相引用（由 ESLint 擋）。
 
 不想裝資料庫時，後端可以用記憶體儲存啟動（重啟後資料消失）：
 
@@ -85,8 +88,7 @@ npm run dev
 # 後端：編譯、架構測試、行為測試、接 PostgreSQL 的整合測試（需要 Docker 在執行）
 ./mvnw verify
 
-# 前端
-cd board-management/web-ui
+# 前端（在專案根目錄執行）
 npm ci && npm run lint && npm test && npm run build
 ```
 
@@ -94,5 +96,5 @@ CI（GitHub Actions，`.github/workflows/ci.yml`）每次推送都會跑這兩�
 
 ### 前端的兩個注意事項
 
-- **請用 Node 22**（`board-management/web-ui/.nvmrc`）。測試工具 Vitest 4 不支援 Node 23，在 Node 23 下測試會啟動失敗。
+- **請用 Node 22**（專案根目錄的 `.nvmrc`）。測試工具 Vitest 4 不支援 Node 23，在 Node 23 下測試會啟動失敗。
 - **新增或升級前端套件時，請用 `npx npm@latest install`** 來更新 `package-lock.json`。npm 10.9 在解析 Vitest 4 的相依時會當掉（`Cannot read properties of null (reading 'edgesOut')`）；照 lock 檔安裝的 `npm ci` 不受影響。

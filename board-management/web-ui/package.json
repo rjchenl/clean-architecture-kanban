@@ -1,32 +1,18 @@
 {
-  "name": "board-management-web-ui",
+  "name": "@kanban/board-management-web-ui",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "看板管理的畫面：只把後端整理好的 ViewModel 顯示出來（規則 CA-9）",
-  "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
-    "test": "vitest run",
-    "lint": "eslint src"
+  "description": "看板管理的畫面：只把後端整理好的 ViewModel 顯示出來（規則 CA-9）。由 main/web-ui 的路由接起來",
+  "exports": {
+    ".": "./src/index.ts"
   },
-  "dependencies": {
+  "scripts": {
+    "test": "vitest run",
+    "build": "vue-tsc --noEmit"
+  },
+  "peerDependencies": {
     "vue": "^3.5.45",
     "vue-router": "^4.6.5"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.11",
-    "@vue/test-utils": "^2.5.1",
-    "eslint": "^10.15.0",
-    "eslint-plugin-vue": "^10.12.1",
-    "jsdom": "^31.0.1",
-    "typescript": "~6.0.0",
-    "typescript-eslint": "^8.72.2",
-    "vite": "^8.3.8",
-    "vitest": "^4.1.12",
-    "vue-tsc": "^3.3.14"
-  },
-  "engines": {
-    "node": "^22.12.0 || >=24.0.0"
   }
 }
