@@ -4,4 +4,9 @@ module kanban.flowanalysis.usecases {
 
     exports kanban.flowanalysis.usecases.commands;
     exports kanban.flowanalysis.usecases.commands.gateway;
+    exports kanban.flowanalysis.usecases.commands.recordboardactivity;
+    exports kanban.flowanalysis.usecases.commands.setcolumnstage;
+    exports kanban.flowanalysis.usecases.commands.setstuckthreshold;
+    exports kanban.flowanalysis.usecases.commands.removestuckthreshold;
+    exports kanban.flowanalysis.usecases.commands.checkstuckworkitems;
 }

@@ -1,0 +1,100 @@
+package kanban.flowanalysis.usecases.commands.setcolumnstage;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import kanban.flowanalysis.entities.boardflow.ColumnStageSet;
+import kanban.flowanalysis.entities.boardflow.FlowColumnRemoved;
+import kanban.flowanalysis.entities.boardflow.RejectionReason;
+import kanban.flowanalysis.entities.boardflow.Stage;
+import kanban.flowanalysis.entities.boardflow.WorkItemFlowResultChanged;
+import kanban.flowanalysis.usecases.commands.CommandResponse;
+import kanban.flowanalysis.usecases.commands.FlowCommandFixture;
+import kanban.flowanalysis.usecases.commands.setcolumnstage.impl.SetColumnStageUseCase;
+import org.junit.jupiter.api.Test;
+
+class SetColumnStageUseCaseTest extends FlowCommandFixture {
+
+    private final SetColumnStageInput useCase = new SetColumnStageUseCase(flows, time, responses::add);
+
+    @Test
+    void 成功_產生ColumnStageSet與重算結果() {
+        givenStandardFlow();
+
+        useCase.execute(new SetColumnStageRequest("board-1", "col-todo", "IN_PROGRESS"));
+
+        assertSucceeded(null);
+        assertThat(newEvents()).containsExactly(
+                new ColumnStageSet(FLOW, TODO, Stage.IN_PROGRESS, NOW),
+                new WorkItemFlowResultChanged(FLOW, CARD_1, T0, null, null, NOW));
+    }
+
+    @Test
+    void 不認得的階段_回覆UNKNOWN_STAGE() {
+        givenStandardFlow();
+
+        useCase.execute(new SetColumnStageRequest("board-1", "col-todo", "doing"));
+
+        assertFailed(RejectionReason.UNKNOWN_STAGE.name());
+        assertThat(newEvents()).isEmpty();
+    }
+
+    @Test
+    void 不存在的欄位_回覆FLOW_COLUMN_NOT_FOUND() {
+        givenStandardFlow();
+
+        useCase.execute(new SetColumnStageRequest("board-1", "col-x", "DONE"));
+
+        assertFailed(RejectionReason.FLOW_COLUMN_NOT_FOUND.name());
+    }
+
+    @Test
+    void 已刪除的欄位_回覆FLOW_COLUMN_REMOVED() {
+        givenStandardFlow(new FlowColumnRemoved(FLOW, at(5), DOING, T1));
+
+        useCase.execute(new SetColumnStageRequest("board-1", "col-doing", "DONE"));
+
+        assertFailed(RejectionReason.FLOW_COLUMN_REMOVED.name());
+    }
+
+    @Test
+    void 看板流程不存在_回覆BOARD_FLOW_NOT_FOUND() {
+        useCase.execute(new SetColumnStageRequest("board-1", "col-todo", "DONE"));
+
+        assertFailed(CommandResponse.BOARD_FLOW_NOT_FOUND);
+    }
+
+    @Test
+    void 識別碼含控制字元_回覆INVALID_CHARACTERS() {
+        // Review Focus 5：網址裡的識別碼含控制字元，不可以變成 500
+        useCase.execute(new SetColumnStageRequest("board\u00001", "col-todo", "DONE"));
+
+        assertFailed(RejectionReason.INVALID_CHARACTERS.name());
+    }
+
+    @Test
+    void Request欄位為null_回覆INVALID_REQUEST() {
+        givenStandardFlow();
+
+        useCase.execute(new SetColumnStageRequest("board-1", "col-todo", null));
+
+        assertFailed(CommandResponse.INVALID_REQUEST);
+    }
+
+    @Test
+    void Request本身為null_回覆INVALID_REQUEST() {
+        useCase.execute(null);
+
+        assertFailed(CommandResponse.INVALID_REQUEST);
+    }
+
+    @Test
+    void 儲存時版本衝突_回覆CONCURRENT_UPDATE() {
+        givenStandardFlow();
+        flows.conflictOnNextSave();
+
+        useCase.execute(new SetColumnStageRequest("board-1", "col-todo", "DONE"));
+
+        assertFailed(CommandResponse.CONCURRENT_UPDATE);
+        assertThat(newEvents()).isEmpty();
+    }
+}

@@ -17,7 +17,9 @@ public final class EventSourcingRules {
     }
 
     private static final Set<String> WRITE_SIDE_GATEWAY_TYPES = Set.of(
-            "BoardRepository", "EventStore", "TimeSource", "IdentityGenerator", "ConcurrentUpdateException");
+            "BoardRepository", "EventStore", "TimeSource", "IdentityGenerator", "ConcurrentUpdateException",
+            // 流程分析的看板流程 Repository（第二階段設計第 0 節 4d）
+            "BoardFlowRepository");
 
     /**
      * ES-1：寫入端只有事件紀錄，沒有另存「聚合現況」的途徑。
